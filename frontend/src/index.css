@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+@theme {
+  --color-primary: #4F46E5;
+  --color-secondary: #7C3AED;
+  --color-accent: #06B6D4;
+  --color-bg-light: #F9FAFB;
+  --color-bg-dark: #0B1120;
+  --color-card-dark: #1F2937;
+  --color-sidebar-dark: #111827;
+}
+
+@layer base {
+  :root {
+    font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    color-scheme: light dark;
+  }
+  
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+  }
+
+  body {
+    @apply bg-bg-light text-gray-900 dark:bg-bg-dark dark:text-gray-50;
+    margin: 0;
+    display: flex;
+    place-items: center;
+    min-width: 320px;
+    min-height: 100vh;
+  }
+  
+  /* Glassmorphism utility */
+  .glass {
+    @apply bg-white/70 dark:bg-card-dark/70 backdrop-blur-md border border-white/20 dark:border-white/10;
+  }
+  
+  /* Hide default browser password reveal icon */
+  input[type="password"]::-ms-reveal,
+  input[type="password"]::-ms-clear {
+    display: none;
+  }
+}
