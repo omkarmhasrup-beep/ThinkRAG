@@ -1,0 +1,23 @@
+# NeoTech Dynamics Corporate Overview
+
+## 1. Company History
+NeoTech Dynamics was established in the year 2012 in Pune, Maharashtra. The company specializes in advanced hardware solutions and artificial intelligence infrastructure. The current CEO is Mr. Ramesh Sharma, who took over in 2018. The company started with a small team of 15 engineers and has now grown to over 5,000 employees globally.
+
+## 2. Flagship Products
+The most notable product of NeoTech Dynamics is the "QuantumCore Processor", which was officially released to the public in January 2024. The QuantumCore Processor operates at extremely high temperatures and therefore requires a specialized proprietary cooling system to function safely. This specific cooling system is called "CryoFrost". 
+
+## 3. Partnerships and Technology
+The CryoFrost cooling technology was not developed entirely in-house. It was created through a strategic partnership with IceTech Inc., a Swedish thermal engineering firm. IceTech Inc. holds a 40% patent share on the CryoFrost technology.
+
+## 4. Human Resources and Policies
+NeoTech Dynamics values its employees and offers competitive benefits. The standard HR policy explicitly states that all permanent employees get 30 days of paid leave annually. 
+However, according to the recently updated 2025 Corporate Guidelines document issued by the Board of Directors, employees are entitled to only 20 days of paid leave per year due to cost-cutting measures.
+
+## 5. Organizational Structure
+The company is divided into three main operational departments:
+- Research Department: Led by Dr. Anita Desai. Focuses on next-generation computing architectures.
+- Engineering Department: Headed by Sameer Patil. Responsible for hardware manufacturing and quality assurance.
+- Marketing Department: Directed by Neha Joshi. Manages global sales, public relations, and branding.
+
+## 6. Miscellaneous Info
+There is a highly popular coffee shop located right next to the Pune headquarters called "Brews & Beans". Many employees spend their breaks there. The coffee shop is not affiliated with NeoTech Dynamics but offers a 10% discount to NeoTech employees.

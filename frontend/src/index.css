@@ -43,4 +43,36 @@
   input[type="password"]::-ms-clear {
     display: none;
   }
+
+  /* Custom Scrollbar Styles */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f3f4f6; /* gray-100 */
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #d1d5db; /* gray-300 */
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af; /* gray-400 */
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    background: #0B1120; /* matches var(--color-bg-dark) */
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: #1F2937; /* matches var(--color-card-dark) */
+    border-radius: 4px;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #374151; /* gray-700 */
+  }
 }

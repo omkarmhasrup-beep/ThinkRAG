@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, Plus, Search, Trash2, Edit2, Check, X, Filter } from 'lucide-react';
+import api from '../services/api';
 
 interface MemoryItem {
   id: string;
@@ -22,43 +23,52 @@ const Memory = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
 
-  useEffect(() => {
-    const existing = localStorage.getItem('agent_memory');
-    if (existing) {
-      try {
-        setMemories(JSON.parse(existing));
-      } catch (e) {}
-    } else {
-      // Add some sample memories
-      const sample = [
-        { id: '1', content: 'User prefers Python over JavaScript for backend tasks.', category: 'Preferences', date: new Date().toISOString() },
-        { id: '2', content: 'Working on a local RAG chatbot project using FastAPI and React.', category: 'Project Context', date: new Date().toISOString() }
-      ];
-      setMemories(sample);
-      localStorage.setItem('agent_memory', JSON.stringify(sample));
+  const loadMemories = async () => {
+    try {
+      const res = await api.get('/memories/');
+      setMemories(res.data.map((m: any) => ({
+        id: m.id,
+        content: m.content,
+        category: m.type,
+        date: m.created_at
+      })));
+    } catch (e) {
+      console.error('Failed to load memories', e);
     }
+  };
+
+  useEffect(() => {
+    loadMemories();
   }, []);
 
-  const saveMemories = (mems: MemoryItem[]) => {
-    setMemories(mems);
-    localStorage.setItem('agent_memory', JSON.stringify(mems));
-  };
-
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newContent.trim()) return;
-    const newMem = {
-      id: Date.now().toString(),
-      content: newContent,
-      category: newCategory,
-      date: new Date().toISOString()
-    };
-    saveMemories([newMem, ...memories]);
-    setIsAdding(false);
-    setNewContent('');
+    try {
+      const res = await api.post('/memories/', {
+        id: Date.now().toString(),
+        content: newContent,
+        type: newCategory
+      });
+      setMemories([{
+        id: res.data.id,
+        content: res.data.content,
+        category: res.data.type,
+        date: res.data.created_at
+      }, ...memories]);
+      setIsAdding(false);
+      setNewContent('');
+    } catch (e) {
+      console.error('Failed to add memory', e);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    saveMemories(memories.filter(m => m.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      await api.delete(`/memories/${id}`);
+      setMemories(memories.filter(m => m.id !== id));
+    } catch (e) {
+      console.error('Failed to delete memory', e);
+    }
   };
 
   const startEdit = (mem: MemoryItem) => {
@@ -66,10 +76,22 @@ const Memory = () => {
     setEditContent(mem.content);
   };
 
-  const saveEdit = () => {
-    if (!editContent.trim()) return;
-    saveMemories(memories.map(m => m.id === editingId ? { ...m, content: editContent } : m));
-    setEditingId(null);
+  const saveEdit = async () => {
+    if (!editContent.trim() || !editingId) return;
+    try {
+      const memToEdit = memories.find(m => m.id === editingId);
+      if (!memToEdit) return;
+      
+      const res = await api.put(`/memories/${editingId}`, {
+        content: editContent,
+        type: memToEdit.category
+      });
+      
+      setMemories(memories.map(m => m.id === editingId ? { ...m, content: res.data.content, category: res.data.type } : m));
+      setEditingId(null);
+    } catch (e) {
+      console.error('Failed to update memory', e);
+    }
   };
 
   const filtered = memories.filter(m => {
@@ -80,7 +102,7 @@ const Memory = () => {
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto h-full flex flex-col overflow-y-auto">
-      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 shrink-0">
         <div>
           <h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">Agent Memory</h1>
           <p className="text-gray-500">Manage what the AI remembers about you across all conversations.</p>
@@ -106,7 +128,7 @@ const Memory = () => {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide shrink-0">
         <Filter size={16} className="text-gray-400 mr-2 shrink-0" />
         {CATEGORIES.map(cat => (
           <button
@@ -124,7 +146,7 @@ const Memory = () => {
       </div>
 
       {isAdding && (
-        <div className="mb-6 bg-white/60 dark:bg-primary/5 backdrop-blur-xl border border-primary/20 rounded-3xl p-6 shadow-lg animate-in fade-in slide-in-from-top-4">
+        <div className="mb-6 bg-white/60 dark:bg-primary/5 backdrop-blur-xl border border-primary/20 rounded-3xl p-6 shadow-lg animate-in fade-in slide-in-from-top-4 shrink-0">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><Brain size={20} className="text-primary"/> Teach AI something new</h3>
           <textarea
             value={newContent}
@@ -155,7 +177,7 @@ const Memory = () => {
           <p className="text-gray-500 max-w-sm">The AI doesn't have any specific memories in this category yet.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
           {filtered.map(mem => (
             <div key={mem.id} className="bg-white/60 dark:bg-[#1a1a1a]/60 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all group flex flex-col">
               <div className="flex items-center justify-between mb-4">

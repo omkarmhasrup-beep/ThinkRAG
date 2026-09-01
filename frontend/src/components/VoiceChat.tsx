@@ -94,7 +94,7 @@ const VoiceChat: React.FC<VoiceChatProps> = ({ onTranscript, isAiSpeaking }) => 
     <>
       <button
         onClick={startRecording}
-        className="p-2 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer mb-1"
+        className="w-10 h-10 flex items-center justify-center shrink-0 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer"
         title="Voice Input"
       >
         <Mic size={20} />

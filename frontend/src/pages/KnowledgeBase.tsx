@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UploadCloud, FileText, Trash2, Loader2, CheckCircle2, Database, HardDrive, Clock, FileStack, Binary, Network } from 'lucide-react';
 import api from '../services/api';
-import { useAuth } from '../hooks/useAuth';
+
 import AnimatedCounter from '../components/AnimatedCounter';
 
 const KnowledgeBase = () => {

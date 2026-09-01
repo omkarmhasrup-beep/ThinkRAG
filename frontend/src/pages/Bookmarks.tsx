@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Bookmark, Search, Trash2, Share2, Filter, ChevronDown, Check } from 'lucide-react';
+import api from '../services/api';
 
 interface SavedBookmark {
   id: string;
@@ -21,25 +22,31 @@ const Bookmarks = () => {
     loadBookmarks();
   }, []);
 
-  const loadBookmarks = () => {
-    const existing = localStorage.getItem('bookmarks');
-    if (existing) {
-      try {
-        setBookmarks(JSON.parse(existing).reverse());
-      } catch (e) {}
+  const loadBookmarks = async () => {
+    try {
+      const response = await api.get('/bookmarks/');
+      setBookmarks(response.data);
+    } catch (e) {
+      console.error('Failed to load bookmarks', e);
     }
   };
 
-  const deleteBookmark = (id: string) => {
-    const updated = bookmarks.filter(b => b.id !== id);
-    setBookmarks(updated);
-    localStorage.setItem('bookmarks', JSON.stringify(updated));
+  const deleteBookmark = async (id: string) => {
+    try {
+      await api.delete(`/bookmarks/${id}`);
+      setBookmarks(bookmarks.filter(b => b.id !== id));
+    } catch (e) {
+      console.error('Failed to delete bookmark', e);
+    }
   };
 
-  const updateCategory = (id: string, newCategory: string) => {
-    const updated = bookmarks.map(b => b.id === id ? { ...b, category: newCategory } : b);
-    setBookmarks(updated);
-    localStorage.setItem('bookmarks', JSON.stringify(updated.reverse()));
+  const updateCategory = async (id: string, newCategory: string) => {
+    try {
+      await api.put(`/bookmarks/${id}`, { category: newCategory });
+      setBookmarks(bookmarks.map(b => b.id === id ? { ...b, category: newCategory } : b));
+    } catch (e) {
+      console.error('Failed to update category', e);
+    }
   };
 
   const copyToClipboard = (id: string, content: string) => {

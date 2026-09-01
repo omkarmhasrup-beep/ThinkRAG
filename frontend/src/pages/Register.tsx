@@ -1,144 +1,132 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useNavigate, Link } from 'react-router-dom';
+import { BrainCircuit, Loader2 } from 'lucide-react';
 import api from '../services/api';
-import { Eye, EyeOff, Check, X } from 'lucide-react';
 
-const Register = () => {
+const Register: React.FC = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-
-  const passwordRules = {
-    length: password.length >= 8,
-    upper: /[A-Z]/.test(password),
-    lower: /[a-z]/.test(password),
-    number: /[0-9]/.test(password),
-    special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
-  };
-
-  const isPasswordValid = Object.values(passwordRules).every(Boolean);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      await api.post('/register', { username, email, password });
-      
-      // Auto login after register
-      const response = await api.post('/login', {
-        username: username.trim(),
-        password: password.trim()
-      }, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      await api.post('/auth/register', {
+        username,
+        email,
+        password
       });
-      await login(response.data.access_token);
-      navigate('/');
+      // After successful registration, redirect to login
+      navigate('/login');
     } catch (err: any) {
-      const status = err.response?.status;
-      const detail = err.response?.data?.detail;
-      if (status === 502 || err.message.includes('502') || err.code === 'ERR_NETWORK') {
-        setError('Cannot connect to the server. Please check if the backend is running.');
-      } else if (typeof detail === 'string') {
-        setError(detail);
-      } else {
-        setError(err.message || 'Registration failed');
-      }
+      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-md glass p-8 rounded-2xl shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#111111] px-4">
+      <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Create Account</h1>
-          <p className="text-gray-500 mt-2">Join AI Chatbot today</p>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 mb-4 shadow-lg shadow-indigo-500/30">
+            <BrainCircuit className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Create an account</h2>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Join ThinkRAG today</p>
         </div>
-        
-        {error && <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded-lg mb-6 text-sm">{error}</div>}
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Username</label>
-            <input 
-              type="text" 
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-              placeholder="Choose a username"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <div className="relative">
-              <input 
-                type={showPassword ? "text" : "password"} 
+
+        <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 p-8">
+          {error && (
+            <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Username
+              </label>
+              <input
+                type="text"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-[#222222] border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white transition-colors outline-none"
+                placeholder="Choose a username"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-[#222222] border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white transition-colors outline-none"
+                placeholder="Enter your email"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Password
+              </label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-[#222222] border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:text-white transition-colors outline-none"
                 placeholder="Create a password"
-                required
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors focus:outline-none"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Password Strength Checklist */}
-          <div className="bg-gray-50 dark:bg-white/5 p-3 rounded-lg space-y-2 mt-2 border border-gray-100 dark:border-white/5">
-            <p className="text-xs font-medium text-gray-500 mb-1">Password must contain:</p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className={`flex items-center gap-1.5 ${passwordRules.length ? 'text-green-500 font-medium' : 'text-gray-400'}`}>
-                {passwordRules.length ? <Check size={14} /> : <X size={14} />} 8+ characters
-              </div>
-              <div className={`flex items-center gap-1.5 ${passwordRules.upper ? 'text-green-500 font-medium' : 'text-gray-400'}`}>
-                {passwordRules.upper ? <Check size={14} /> : <X size={14} />} Uppercase
-              </div>
-              <div className={`flex items-center gap-1.5 ${passwordRules.lower ? 'text-green-500 font-medium' : 'text-gray-400'}`}>
-                {passwordRules.lower ? <Check size={14} /> : <X size={14} />} Lowercase
-              </div>
-              <div className={`flex items-center gap-1.5 ${passwordRules.number ? 'text-green-500 font-medium' : 'text-gray-400'}`}>
-                {passwordRules.number ? <Check size={14} /> : <X size={14} />} Number
-              </div>
-              <div className={`flex items-center gap-1.5 ${passwordRules.special ? 'text-green-500 font-medium' : 'text-gray-400'}`}>
-                {passwordRules.special ? <Check size={14} /> : <X size={14} />} Special character
+              <div className="flex items-center mt-3">
+                <input
+                  id="show-password"
+                  type="checkbox"
+                  checked={showPassword}
+                  onChange={(e) => setShowPassword(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-[#222222] dark:border-gray-600"
+                />
+                <label htmlFor="show-password" className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Show password
+                </label>
               </div>
             </div>
-          </div>
 
-          <button 
-            type="submit"
-            disabled={!isPasswordValid || !username || !email}
-            className="w-full bg-gradient-to-r from-primary to-secondary text-gray-900 dark:text-white font-medium py-3 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity shadow-lg shadow-primary/20 mt-2"
-          >
-            Create Account
-          </button>
-        </form>
-        
-        <p className="text-center mt-6 text-sm text-gray-500">
-          Already have an account? <Link to="/login" className="text-primary hover:underline font-medium">Sign in</Link>
-        </p>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 px-4 flex justify-center items-center rounded-xl text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-lg shadow-indigo-500/30 transition-all font-medium disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign Up'}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+            Already have an account?{' '}
+            <Link to="/login" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 font-medium transition-colors">
+              Sign in
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

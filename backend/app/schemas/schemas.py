@@ -1,16 +1,23 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import List, Optional
 
 class UserCreate(BaseModel):
     username: str
-    email: EmailStr
-    password: str
+    email: str
+    password: str = Field(..., min_length=8)
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(..., min_length=8)
 
 class UserResponse(BaseModel):
     id: int
     username: str
-    email: EmailStr
+    email: str
     created_at: datetime
     class Config:
         from_attributes = True
@@ -27,7 +34,7 @@ class MessageBase(BaseModel):
     content: str
 
 class MessageCreate(MessageBase):
-    pass
+    image: Optional[str] = None
 
 class MessageResponse(MessageBase):
     id: int
@@ -51,9 +58,41 @@ class ChatResponse(ChatBase):
     class Config:
         from_attributes = True
 
-class ForgotPasswordRequest(BaseModel):
-    identifier: str # can be email or username
+class BookmarkCreate(BaseModel):
+    id: str
+    chat_id: int
+    message_idx: int
+    content: str
+    category: str = "General"
 
-class ResetPasswordRequest(BaseModel):
-    token: str
-    new_password: str
+class BookmarkUpdate(BaseModel):
+    category: str
+
+class BookmarkResponse(BaseModel):
+    id: str
+    user_id: int
+    chat_id: int
+    message_idx: int
+    content: str
+    category: str
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class MemoryCreate(BaseModel):
+    id: str
+    content: str
+    type: str
+
+class MemoryUpdate(BaseModel):
+    content: str
+    type: str
+
+class MemoryResponse(BaseModel):
+    id: str
+    user_id: int
+    content: str
+    type: str
+    created_at: datetime
+    class Config:
+        from_attributes = True
