@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Send, Bot, Pencil, Plus, BookmarkPlus, Check, Download, Image as ImageIcon, X as CloseIcon, Maximize2, Loader2, FileType, Copy, RefreshCw, Share, Trash2, Volume2, VolumeX, ThumbsUp, ThumbsDown, FileText, FileSpreadsheet, Presentation, Paperclip, X } from 'lucide-react';
+import { Send, Bot, Pencil, Plus, BookmarkPlus, Check, Download, X as CloseIcon, Maximize2, Loader2, FileType, Copy, RefreshCw, Share, ThumbsUp, ThumbsDown, FileText } from 'lucide-react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import api from '../services/api';
 
@@ -63,7 +63,7 @@ const Chat = () => {
   const [copiedId, setCopiedId] = useState<number | string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [isExportOpen, setIsExportOpen] = useState(false);
-  const [readingMessageId, setReadingMessageId] = useState<number | null>(null);
+
 
   // Image Upload State
   const [images, setImages] = useState<File[]>([]);
@@ -71,8 +71,7 @@ const Chat = () => {
   const [ocrStatus, setOcrStatus] = useState<Record<string, 'scanning' | 'done' | 'failed'>>({});
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
-  const [docs, setDocs] = useState<File[]>([]);
-  const [docProgress, setDocProgress] = useState<Record<string, number>>({});
+
   const [feedback, setFeedback] = useState<Record<string | number, 'up' | 'down' | undefined>>({});
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerSource, setViewerSource] = useState('');
@@ -147,20 +146,7 @@ const Chat = () => {
     }
   };
 
-  const handleReadAloud = (messageIndex: number, content: string) => {
-    if (readingMessageId === messageIndex) {
-      window.speechSynthesis.cancel();
-      setReadingMessageId(null);
-      return;
-    }
 
-    window.speechSynthesis.cancel(); // Stop any current speech
-    const utterance = new SpeechSynthesisUtterance(content);
-    utterance.onend = () => setReadingMessageId(null);
-    utterance.onerror = () => setReadingMessageId(null);
-    setReadingMessageId(messageIndex);
-    window.speechSynthesis.speak(utterance);
-  };
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -337,24 +323,6 @@ const Chat = () => {
   };
 
   const handleDocSelection = (files: File[]) => {
-    setDocs(prev => [...prev, ...files]);
-
-    // Simulate upload progress for each file
-    files.forEach(file => {
-      const fileName = file.name;
-      setDocProgress(prev => ({ ...prev, [fileName]: 0 }));
-
-      const interval = setInterval(() => {
-        setDocProgress(prev => {
-          const current = prev[fileName] || 0;
-          if (current >= 100) {
-            clearInterval(interval);
-            return { ...prev, [fileName]: 100 };
-          }
-          return { ...prev, [fileName]: current + Math.floor(Math.random() * 20) + 10 };
-        });
-      }, 300);
-    });
 
     setUploadingFile(true);
     const uploadPromises = files.map(f => {
@@ -424,6 +392,7 @@ const Chat = () => {
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
+      let aiContent = "";
       let firstChunkReceived = false;
 
       while (reader) {
@@ -472,69 +441,7 @@ const Chat = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleRegenerate = async (aiMsgIdx: number) => {
-    let userMsg = null;
-    let userMsgIdx = -1;
-    for (let i = aiMsgIdx - 1; i >= 0; i--) {
-      if (messages[i].role === 'user') {
-        userMsg = messages[i];
-        userMsgIdx = i;
-        break;
-      }
-    }
 
-    if (!userMsg || !userMsg.id || !chatId || loading) return;
-    setLoading(true);
-
-    const newMessages = messages.slice(0, userMsgIdx);
-    const tempAiMessage = { role: 'ai', content: '', isStreaming: true };
-    setMessages([...newMessages, userMsg, tempAiMessage]);
-
-    try {
-      const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}` : '/api';
-      const response = await fetch(`${API_BASE}/messages/${chatId}/${userMsg.id}/regenerate`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ role: 'user', content: userMsg.content })
-      });
-
-      if (!response.ok) throw new Error("Stream failed");
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let firstChunkReceived = false;
-
-      while (reader) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        if (!firstChunkReceived) {
-          firstChunkReceived = true;
-        }
-
-        const chunk = decoder.decode(value, { stream: true });
-        aiContent += chunk;
-        setMessages(prev => {
-          const newMessages = [...prev];
-          newMessages[newMessages.length - 1] = { role: 'ai', content: aiContent };
-          return newMessages;
-        });
-      }
-
-      setMessages(prev => {
-        const newMessages = [...prev];
-        newMessages[newMessages.length - 1] = { role: 'ai', content: aiContent, isStreaming: false };
-        return newMessages;
-      });
-      await fetchMessages(undefined, false);
-    } catch (error) {
-      console.error("Failed to regenerate message", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleShare = async (content: string) => {
     if (navigator.share) {
@@ -552,24 +459,7 @@ const Chat = () => {
     }
   };
 
-  const handleExport = (content: string, id: number | string) => {
-    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `response-${id}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 
-  const handleFeedback = (id: string | number, type: 'up' | 'down') => {
-    setFeedback(prev => ({
-      ...prev,
-      [id]: prev[id] === type ? undefined : type
-    }));
-  };
 
   const handleLinkClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -867,7 +757,6 @@ const Chat = () => {
                   setInput(newInput);
                   sendMessage(newInput);
                 }}
-                isAiSpeaking={messages.some(m => m.isStreaming)}
               />
             </div>
             <textarea

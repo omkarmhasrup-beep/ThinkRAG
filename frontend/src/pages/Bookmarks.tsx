@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Bookmark, Search, Trash2, Share2, Filter, ChevronDown, Check } from 'lucide-react';
 import api from '../services/api';
 

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { Monitor, Moon, Sun, Check, MessageSquare, Bot, Sliders, Palette, Database } from 'lucide-react';
+import { Monitor, Moon, Sun, Check, Bot, Sliders, Palette, Database } from 'lucide-react';
 
 const Settings = () => {
   const { theme, setTheme, accentColor, setAccentColor } = useTheme();

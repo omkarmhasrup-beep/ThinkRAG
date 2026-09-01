@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search as SearchIcon, FileText, Clock, X, Filter, Loader2, ArrowRight } from 'lucide-react';
+import { Search as SearchIcon, FileText, Clock, X, Filter, Loader2 } from 'lucide-react';
 import api from '../services/api';
 
 const HighlightText = ({ text, highlight }: { text: string, highlight: string }) => {

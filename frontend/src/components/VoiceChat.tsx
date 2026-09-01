@@ -3,10 +3,9 @@ import { Mic, Square, Loader2 } from 'lucide-react';
 
 interface VoiceChatProps {
   onTranscript: (text: string) => void;
-  isAiSpeaking: boolean;
 }
 
-const VoiceChat: React.FC<VoiceChatProps> = ({ onTranscript, isAiSpeaking }) => {
+const VoiceChat: React.FC<VoiceChatProps> = ({ onTranscript }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [status, setStatus] = useState<'idle' | 'listening' | 'processing'>('idle');

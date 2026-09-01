@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, FileText, Sparkles, CheckCircle2 } from 'lucide-react';
 
 const ThinkingIndicator = () => {
