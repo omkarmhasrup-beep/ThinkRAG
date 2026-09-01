@@ -103,7 +103,12 @@ def generate_message(chat_id: int, message: schemas.MessageCreate, db: Session =
         finally:
             gen_db2.close()
             
-    return StreamingResponse(stream_generator(), media_type="text/event-stream")
+        headers = {
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    return StreamingResponse(stream_generator(), media_type="text/event-stream", headers=headers)
 
 @router.put("/{chat_id}/{message_id}/regenerate")
 def regenerate_message(chat_id: int, message_id: int, message: schemas.MessageCreate, db: Session = Depends(database.get_db), current_user: models.User = Depends(get_current_user)):
@@ -143,4 +148,9 @@ def regenerate_message(chat_id: int, message_id: int, message: schemas.MessageCr
         finally:
             gen_db.close()
             
-    return StreamingResponse(stream_generator(), media_type="text/plain")
+        headers = {
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    return StreamingResponse(stream_generator(), media_type="text/plain", headers=headers)

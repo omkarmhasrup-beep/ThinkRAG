@@ -39,11 +39,16 @@ async def upload_document(
         # Extract text immediately
         extracted_text = extract_text_from_file(file_path, file_extension)
             
+        # Upload the original file to S3 (if configured)
+        from ..services.storage_service import storage_service
+        object_key = f"user_{current_user.id}/{uuid.uuid4().hex}_{file.filename}"
+        s3_url = storage_service.upload_file(file_path, object_key)
+            
         # Create DB record first to get a valid auto-incremented file ID
         new_file = models.File(
             user_id=current_user.id,
             filename=file.filename,
-            filepath="db-only", # Filepath is no longer used for production data
+            filepath=s3_url,
             filetype=file_extension,
             content=extracted_text
         )
@@ -131,7 +136,9 @@ def delete_document(doc_id: int, db: Session = Depends(database.get_db), current
     if not file_record:
         raise HTTPException(status_code=404, detail="Document not found or unauthorized")
         
-    # No local file deletion needed anymore since we don't keep them
+    # Delete from S3 storage if applicable
+    from ..services.storage_service import storage_service
+    storage_service.delete_file(file_record.filepath)
 
     db.delete(file_record)
     db.commit()

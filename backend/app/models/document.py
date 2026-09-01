@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..database import Base
@@ -32,3 +32,7 @@ class DocumentChunk(Base):
     # Relationships
     file = relationship("File", back_populates="chunks")
     user = relationship("User")
+
+    __table_args__ = (
+        Index("hnsw_index", "embedding", postgresql_using="hnsw", postgresql_with={"m": 16, "ef_construction": 64}, postgresql_ops={"embedding": "vector_cosine_ops"}),
+    )
