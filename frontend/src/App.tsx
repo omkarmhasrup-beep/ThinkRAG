@@ -15,7 +15,8 @@ import ResetPassword from './pages/ResetPassword';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import api from './api';
 
 class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
   constructor(props: any) {
@@ -40,6 +41,19 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
 }
 
 function App() {
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        const response = await api.get('/');
+        console.log('API Connection Success:', response.data);
+      } catch (error) {
+        console.error('API Connection Error:', error);
+      }
+    };
+    
+    testConnection();
+  }, []);
+
   return (
     <ErrorBoundary>
     <ThemeProvider>

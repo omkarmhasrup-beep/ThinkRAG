@@ -241,7 +241,7 @@ const Chat = () => {
     console.log(`[FRONTEND PERF DIAGNOSTICS] [FRONTEND PERF] Send clicked / Request started at ${t_ui_start} ms`);
 
     try {
-      const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}` : '/api';
+      const API_BASE = 'http://127.0.0.1:8000';
       const token = localStorage.getItem('token');
 
       const payload: any = { role: 'user', content: userMessage.content };
@@ -297,6 +297,11 @@ const Chat = () => {
       window.dispatchEvent(new CustomEvent('chat-updated'));
     } catch (error) {
       console.error("Failed to generate response", error);
+      setMessages(prev => {
+        const newMessages = [...prev];
+        newMessages[newMessages.length - 1] = { role: 'ai', content: 'Sorry, there was an error connecting to the server. Please try again.', isStreaming: false };
+        return newMessages;
+      });
     } finally {
       setLoading(false);
     }
@@ -379,11 +384,13 @@ const Chat = () => {
     }
 
     try {
-      const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}` : '/api';
+      const API_BASE = 'http://127.0.0.1:8000';
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}/messages/${chatId}/${msgId}/regenerate`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ role: 'user', content: editContent })
       });
