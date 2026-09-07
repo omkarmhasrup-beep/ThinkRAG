@@ -1,1 +1,1 @@
-{"t_req": 21204.5097407, "t_context_start": 21205.2101574, "t_prompt_start": 21206.5473086, "t_prompt_end": 21206.5478618, "llm_start": 21206.5481781, "first_token_time": 21261.4850268, "llm_end": 21266.8390821, "total_time": 62.329341399999976}
+{"t_req": 2831.2616169, "t_context_start": 2831.962192, "t_prompt_start": 2833.9862386, "t_prompt_end": 2834.0086682, "llm_start": 2834.0724264, "first_token_time": 2838.607253, "llm_end": 2874.6226703, "total_time": 43.3610534000004}
