@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Updated to use Localhost since Render is giving 502 errors
-const API_URL = 'http://127.0.0.1:8000';
+// Use environment variable if available, otherwise fallback to localhost
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 const api = axios.create({
   baseURL: API_URL,
