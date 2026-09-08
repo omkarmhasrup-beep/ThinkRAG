@@ -241,7 +241,7 @@ const Chat = () => {
     console.log(`[FRONTEND PERF DIAGNOSTICS] [FRONTEND PERF] Send clicked / Request started at ${t_ui_start} ms`);
 
     try {
-      const API_BASE = 'http://127.0.0.1:8000';
+      const API_BASE = 'https://thinkrag-1.onrender.com';
       const token = localStorage.getItem('token');
 
       const payload: any = { role: 'user', content: userMessage.content };
