@@ -516,12 +516,8 @@ const Chat = () => {
           <div className="max-w-4xl mx-auto space-y-6 pb-20">
             {messages.map((msg, idx) => {
               let cleanContent = msg.content || '';
-              let chunks: any[] = [];
               const ragMatch = /```rag-context\n([\s\S]*?)```/.exec(cleanContent);
               if (ragMatch) {
-                try {
-                  chunks = JSON.parse(ragMatch[1]);
-                } catch (e) { }
                 cleanContent = cleanContent.replace(ragMatch[0], '').trim();
               }
               // Strip <think>/<analysis>/etc. blocks from both live-streamed and
