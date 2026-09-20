@@ -25,27 +25,19 @@ _THINK_CLOSE_RE = re.compile(
 # ============================================================
 
 def _filter_think_blocks(raw_stream):
-    """
-    Remove model reasoning/thinking blocks from the user-visible
-    response while keeping the actual answer streaming normally.
-
-    Supported tags:
-        <think>...</think>
-        <thinking>...</thinking>
-        <analysis>...</analysis>
-        <reasoning>...</reasoning>
-
-    Handles tags that are split across multiple stream chunks.
-    """
 
     buffer = ""
     inside_think = False
-
-    # Maximum number of characters we keep waiting for a possible tag.
-    # This prevents unnecessary buffering and keeps streaming responsive.
     MAX_PARTIAL_TAG_LENGTH = 20
 
+    import time
+    first_chunk_received = False
+    
     for token in raw_stream:
+        if not first_chunk_received:
+            first_chunk_received = True
+            t_gemini_first_chunk = time.time() * 1000
+            print(f"[E2E] 5. Gemini first chunk arrives at backend: {t_gemini_first_chunk}")
 
         if not token:
             continue
@@ -53,94 +45,37 @@ def _filter_think_blocks(raw_stream):
         buffer += token
 
         while True:
-
-            # ====================================================
-            # CURRENTLY INSIDE THINK BLOCK
-            # ====================================================
-
             if inside_think:
-
                 close_match = _THINK_CLOSE_RE.search(buffer)
-
                 if close_match:
-
-                    # Remove everything before and including
-                    # the closing think tag.
                     buffer = buffer[close_match.end():]
-
                     inside_think = False
-
-                    # There may already be actual answer content
-                    # after the closing tag.
                     continue
-
                 else:
-                    # We haven't received </think> yet.
-                    #
-                    # Do NOT send reasoning to the frontend.
-                    # Keep only a small tail in case the closing
-                    # tag is split between chunks.
-
                     if len(buffer) > MAX_PARTIAL_TAG_LENGTH:
                         buffer = buffer[-MAX_PARTIAL_TAG_LENGTH:]
-
                     break
-
-            # ====================================================
-            # OUTSIDE THINK BLOCK
-            # ====================================================
-
             else:
-
                 open_match = _THINK_OPEN_RE.search(buffer)
-
                 if open_match:
-
-                    # Send anything that came BEFORE <think>.
                     before = buffer[:open_match.start()]
-
                     if before:
                         yield before
-
-                    # Remove opening tag.
                     buffer = buffer[open_match.end():]
-
                     inside_think = True
-
                     continue
 
-                # =================================================
-                # NO THINK TAG FOUND
-                # =================================================
-
-                # Keep a small tail because the next token may
-                # complete a split tag such as:
-                #
-                # "<thi" + "nk>"
-                #
                 safe_end = len(buffer) - MAX_PARTIAL_TAG_LENGTH
-
                 if safe_end > 0:
-
                     output = buffer[:safe_end]
-
                     if output:
                         yield output
-
                     buffer = buffer[safe_end:]
-
                 break
 
-    # ============================================================
-    # STREAM FINISHED
-    # ============================================================
-
     if not inside_think and buffer:
-
-        # Remove any accidental tags that remain.
         cleaned = _THINK_OPEN_RE.sub("", buffer)
         cleaned = _THINK_CLOSE_RE.sub("", cleaned)
-
         if cleaned:
             yield cleaned
 
@@ -155,7 +90,68 @@ _http_client = httpx.Client(
 
 
 # ============================================================
-# GROQ / OLLAMA LLM STREAM
+# GOOGLE GEMINI CLIENT
+# ============================================================
+_gemini_client = None
+
+def get_gemini_client():
+    global _gemini_client
+    if _gemini_client is None:
+        from google import genai
+        if not settings.GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY environment variable is missing or invalid.")
+        try:
+            _gemini_client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize Gemini Client: {e}")
+    return _gemini_client
+
+# ============================================================
+# GOOGLE GEMINI STREAM
+# ============================================================
+
+def _stream_gemini(system_prompt: str, question: str, image: str = None):
+    from google.genai import types
+    import base64
+
+    client = get_gemini_client()
+    model_name = settings.GEMINI_MODEL or "gemini-2.5-flash"
+
+    contents = []
+    if image:
+        try:
+            image_bytes = base64.b64decode(image)
+            contents.append(
+                types.Part.from_bytes(
+                    data=image_bytes,
+                    mime_type="image/jpeg"
+                )
+            )
+        except Exception as img_err:
+            print(f"[GEMINI] Warning: could not parse image: {img_err}")
+
+    contents.append(question)
+
+    config = types.GenerateContentConfig(
+        system_instruction=system_prompt,
+        temperature=0.7,
+        max_output_tokens=2048,
+        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
+    )
+
+    response = client.models.generate_content_stream(
+        model=model_name,
+        contents=contents,
+        config=config,
+    )
+
+    for chunk in response:
+        if chunk.text:
+            yield chunk.text
+
+
+# ============================================================
+# LLM STREAM (GEMINI / GROQ / OLLAMA)
 # ============================================================
 
 def generate_llm_response(
@@ -165,10 +161,22 @@ def generate_llm_response(
 ):
 
     # ============================================================
-    # GROQ
+    # 1. GOOGLE GEMINI
     # ============================================================
+    if settings.GEMINI_API_KEY:
+        try:
+            for chunk in _filter_think_blocks(_stream_gemini(system_prompt, question, image)):
+                if chunk:
+                    yield chunk
+            return
+        except Exception as e:
+            yield f"\n[Google Gemini API Error]: {e}"
+            return
 
-    if settings.GROQ_API_KEY:
+    # ============================================================
+    # 2. GROQ
+    # ============================================================
+    elif settings.GROQ_API_KEY:
 
         try:
             

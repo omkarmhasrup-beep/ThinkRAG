@@ -20,15 +20,51 @@ def get_chats(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    import time
+    t_recv = time.time() * 1000
+    print(f"[PERF CHATS] 2. Backend /chats request received: {t_recv}")
+    
+    t_db_start = time.time() * 1000
+    print(f"[PERF CHATS] 3. Database query start: {t_db_start}")
+
     # COALESCE: if updated_at is NULL (never updated), fall back to created_at for ordering
     chats = (
-        db.query(models.Chat)
+        db.query(
+            models.Chat.id,
+            models.Chat.user_id,
+            models.Chat.title,
+            models.Chat.created_at,
+            models.Chat.updated_at
+        )
         .filter(models.Chat.user_id == current_user.id)
         .order_by(
             func.coalesce(models.Chat.updated_at, models.Chat.created_at).desc()
         )
         .all()
     )
+    
+    t_db_end = time.time() * 1000
+    print(f"[PERF CHATS] 4. Database query end: {t_db_end} (took {t_db_end - t_db_start} ms)")
+
+    # Diagnostics to determine actual serialization cost and payload size
+    import json
+    t_serial_start = time.time() * 1000
+    print(f"[PERF CHATS] 5. Response serialization start: {t_serial_start}")
+    
+    try:
+        # Simulate exact Pydantic serialization properly handling datetimes
+        serialized_chats = [schemas.ChatResponse.model_validate(c).model_dump(mode="json") for c in chats]
+        payload_str = json.dumps(serialized_chats)
+        payload_size = len(payload_str.encode('utf-8'))
+        
+        print(f"[DIAGNOSTICS] Total chats: {len(chats)}")
+        print(f"[DIAGNOSTICS] Raw JSON Payload Size (bytes): {payload_size}")
+    except Exception as e:
+        print(f"[DIAGNOSTICS] Error during serialization check: {e}")
+        
+    t_serial_end = time.time() * 1000
+    print(f"[PERF CHATS] 6. Backend response sent: {t_serial_end} (manual Pydantic serialization took {t_serial_end - t_serial_start} ms)")
+    
     return chats
 
 

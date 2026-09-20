@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Plus, MessageSquare, Database, Settings, Trash2, X, Sun, Moon, Search,
   Pin, Bookmark, Brain, BarChart2, Folder, FolderPlus, ChevronDown, ChevronRight,
-  Loader2, AlertCircle, RefreshCw, LogOut, User as UserIcon
+  Loader2, AlertCircle, RefreshCw, LogOut, User as UserIcon, CheckCircle2
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -76,6 +76,8 @@ const Sidebar = ({ onClose }: { onClose: () => void }) => {
   const [loadingChats, setLoadingChats] = useState(true);
   const [chatsError, setChatsError] = useState(false);
 
+  const [serverStatus, setServerStatus] = useState<'loading' | 'connected' | 'error'>('loading');
+
   const [searchQuery, setSearchQuery] = useState('');
   const [pinnedIds, setPinnedIds] = useState<number[]>([]);
 
@@ -91,7 +93,11 @@ const Sidebar = ({ onClose }: { onClose: () => void }) => {
   const fetchChats = useCallback(async () => {
     setChatsError(false);
     try {
+      const t_start = Date.now();
+      console.log(`[PERF CHATS] 1. Frontend GET /chats request start: ${t_start}`);
       const res = await api.get('/chats');
+      const t_end = Date.now();
+      console.log(`[PERF CHATS] 7. Frontend response received: ${t_end} (took ${t_end - t_start} ms)`);
       setChats(res.data);
     } catch {
       setChatsError(true);
@@ -102,6 +108,17 @@ const Sidebar = ({ onClose }: { onClose: () => void }) => {
 
   // ── Effects ──
   useEffect(() => {
+    let isMounted = true;
+    const checkServerStatus = async () => {
+      try {
+        await api.get('/health');
+        if (isMounted) setServerStatus('connected');
+      } catch (error) {
+        if (isMounted) setServerStatus('error');
+      }
+    };
+    checkServerStatus();
+
     fetchChats();
 
     // Listen to the unified 'chat-updated' event fired by Chat.tsx
@@ -118,7 +135,10 @@ const Sidebar = ({ onClose }: { onClose: () => void }) => {
       try { setCollections(JSON.parse(savedCols)); } catch (_) {}
     }
 
-    return () => window.removeEventListener('chat-updated', handleChatUpdated);
+    return () => {
+      window.removeEventListener('chat-updated', handleChatUpdated);
+      isMounted = false;
+    };
   }, [fetchChats]);
 
   // ── New Chat: navigate to blank state — chat is created lazily on first message ──
@@ -494,68 +514,72 @@ const Sidebar = ({ onClose }: { onClose: () => void }) => {
         </div>
       </div>
 
-      {/* Bottom navigation */}
-      <div className="p-3 border-t border-gray-200 dark:border-white/10">
-        <button
-          onClick={toggleTheme}
-          className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-white/5 transition-colors text-left"
-        >
-          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-          <span className="text-sm font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-        </button>
+      {/* Compact Secondary Navigation */}
+      <div className="px-3 pt-2 pb-1 border-t border-gray-100 dark:border-white/5 space-y-0.5">
         <Link
           to="/knowledge-base"
           onClick={() => window.innerWidth < 1024 && onClose()}
-          className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${location.pathname === '/knowledge-base' ? 'bg-primary/20 text-gray-900 dark:text-white' : 'hover:bg-gray-50 dark:bg-white/5'}`}
+          className={`flex items-center gap-3 py-1.5 px-2 rounded-lg transition-colors ${location.pathname === '/knowledge-base' ? 'bg-primary/20 text-gray-900 dark:text-white' : 'hover:bg-gray-50 dark:bg-white/5'}`}
         >
-          <Database size={20} />
+          <Database size={16} />
           <span className="text-sm font-medium">Knowledge Base</span>
         </Link>
         <Link
           to="/search"
           onClick={() => window.innerWidth < 1024 && onClose()}
-          className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${location.pathname === '/search' ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-white' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
+          className={`flex items-center gap-3 py-1.5 px-2 rounded-lg transition-colors ${location.pathname === '/search' ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-white' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
         >
-          <Search size={20} />
+          <Search size={16} />
           <span className="text-sm font-medium">Search</span>
         </Link>
         <Link
           to="/bookmarks"
           onClick={() => window.innerWidth < 1024 && onClose()}
-          className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${location.pathname === '/bookmarks' ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-white' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
+          className={`flex items-center gap-3 py-1.5 px-2 rounded-lg transition-colors ${location.pathname === '/bookmarks' ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-white' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
         >
-          <Bookmark size={20} />
+          <Bookmark size={16} />
           <span className="text-sm font-medium">Bookmarks</span>
         </Link>
         <Link
           to="/memory"
           onClick={() => window.innerWidth < 1024 && onClose()}
-          className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${location.pathname === '/memory' ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-white' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
+          className={`flex items-center gap-3 py-1.5 px-2 rounded-lg transition-colors ${location.pathname === '/memory' ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-white' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
         >
-          <Brain size={20} />
+          <Brain size={16} />
           <span className="text-sm font-medium">Memory</span>
         </Link>
         <Link
           to="/analytics"
           onClick={() => window.innerWidth < 1024 && onClose()}
-          className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${location.pathname === '/analytics' ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-white' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
+          className={`flex items-center gap-3 py-1.5 px-2 rounded-lg transition-colors ${location.pathname === '/analytics' ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-white' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
         >
-          <BarChart2 size={20} />
+          <BarChart2 size={16} />
           <span className="text-sm font-medium">Analytics</span>
         </Link>
+      </div>
+
+      {/* Fixed Bottom navigation */}
+      <div className="px-3 py-1.5 border-t border-gray-100 dark:border-white/5 space-y-0.5">
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-gray-50 dark:bg-white/5 transition-colors text-left"
+        >
+          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          <span className="text-sm font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+        </button>
         <Link
           to="/settings"
           onClick={() => window.innerWidth < 1024 && onClose()}
-          className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${location.pathname === '/settings' ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-white' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
+          className={`flex items-center gap-3 py-1.5 px-2 rounded-lg transition-colors ${location.pathname === '/settings' ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-white' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
         >
-          <Settings size={20} />
+          <Settings size={16} />
           <span className="text-sm font-medium">Settings</span>
         </Link>
       </div>
 
       {/* User profile & Logout */}
-      <div className="p-3 border-t border-gray-200 dark:border-white/10 flex items-center justify-between">
-        <div className="flex items-center gap-2 overflow-hidden">
+      <div className="p-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
+        <div className="flex items-center gap-2 overflow-hidden px-1">
           <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center shrink-0">
             <UserIcon size={16} className="text-indigo-600 dark:text-indigo-400" />
           </div>
@@ -569,8 +593,30 @@ const Sidebar = ({ onClose }: { onClose: () => void }) => {
           className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
           title="Logout"
         >
-          <LogOut size={18} />
+          <LogOut size={16} />
         </button>
+      </div>
+      
+      {/* Server Status */}
+      <div className="px-3 pb-2 pt-1 flex items-center gap-1.5 border-t border-gray-100 dark:border-white/5">
+        {serverStatus === 'loading' && (
+          <>
+            <Loader2 size={12} className="animate-spin text-gray-400" />
+            <span className="text-xs text-gray-400">Connecting...</span>
+          </>
+        )}
+        {serverStatus === 'connected' && (
+          <>
+            <CheckCircle2 size={12} className="text-green-500" />
+            <span className="text-xs text-green-500">Connected</span>
+          </>
+        )}
+        {serverStatus === 'error' && (
+          <>
+            <AlertCircle size={12} className="text-red-500" />
+            <span className="text-xs text-red-500">Disconnected</span>
+          </>
+        )}
       </div>
     </div>
   );

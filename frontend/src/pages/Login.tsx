@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { BrainCircuit, Loader2 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { BrainCircuit, Loader2, Server, CheckCircle2, XCircle, Sun, Moon } from 'lucide-react';
 import api from '../services/api';
 
 const Login: React.FC = () => {
@@ -10,8 +11,22 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [serverStatus, setServerStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const { login } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    const checkServer = async () => {
+      try {
+        await api.get('/health');
+        setServerStatus('connected');
+      } catch (err) {
+        setServerStatus('error');
+      }
+    };
+    checkServer();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,14 +45,26 @@ const Login: React.FC = () => {
       login(response.data.access_token);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
+      if (!err.response) {
+        setError('Unable to reach the backend server. Please check your internet connection.');
+      } else {
+        setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#111111] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#111111] px-4 relative">
+      <button 
+        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        className="absolute top-6 right-6 p-2.5 rounded-xl bg-white dark:bg-[#1a1a1a] text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#222] transition-colors shadow-sm"
+        title="Toggle Theme"
+      >
+        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+      </button>
+      
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 mb-4 shadow-lg shadow-indigo-500/30">
@@ -114,6 +141,29 @@ const Login: React.FC = () => {
             <Link to="/register" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 font-medium transition-colors">
               Sign up
             </Link>
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-center space-x-2 text-sm">
+            <Server className="w-4 h-4 text-gray-500" />
+            <span className="text-gray-600 dark:text-gray-400">Server Status:</span>
+            {serverStatus === 'checking' && (
+              <span className="flex items-center text-yellow-600 dark:text-yellow-400 font-medium">
+                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                Connecting...
+              </span>
+            )}
+            {serverStatus === 'connected' && (
+              <span className="flex items-center text-green-600 dark:text-green-400 font-medium">
+                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                Connected
+              </span>
+            )}
+            {serverStatus === 'error' && (
+              <span className="flex items-center text-red-600 dark:text-red-400 font-medium">
+                <XCircle className="w-3.5 h-3.5 mr-1" />
+                Disconnected
+              </span>
+            )}
           </div>
         </div>
       </div>

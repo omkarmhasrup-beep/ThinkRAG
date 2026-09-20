@@ -41,8 +41,12 @@ app = FastAPI(title="AI Chatbot API")
 origins = [
     "https://think-rag.vercel.app",
     "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
     "http://localhost:3000",
     "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:5175",
     "http://127.0.0.1:3000",
 ]
 
@@ -50,20 +54,26 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"^(http://localhost(:\d+)?|http://127\.0\.0\.1(:\d+)?|https://.*\.vercel\.app)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_private_network=True,
 )
 
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     start_time = time.time()
-    print(f"[PERF] Backend request received: {request.method} {request.url.path}")
     response = await call_next(request)
     process_time = (time.time() - start_time) * 1000
-    print(f"[PERF] Backend response completed: {request.method} {request.url.path} in {process_time:.2f} ms")
+    
+    if "chats" in request.url.path and request.method == "GET":
+        cl = response.headers.get("Content-Length")
+        ce = response.headers.get("Content-Encoding")
+        print(f"[DIAGNOSTICS MIDDLEWARE] GET /chats - Content-Length: {cl}, Content-Encoding: {ce}, Internal Processing Time: {process_time:.2f} ms")
+        
+    response.headers["Access-Control-Allow-Private-Network"] = "true"
     return response
 
 

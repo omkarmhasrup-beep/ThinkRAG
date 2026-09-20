@@ -14,6 +14,7 @@ interface ModelInfo {
 }
 
 const PROVIDER_ICONS: Record<string, React.ElementType> = {
+  'Google (Gemini)': Sparkles,
   'Meta (Groq)': Bot,
   'Google (Groq)': Zap,
   'Moonshot AI (Groq)': Sparkles,
@@ -24,6 +25,7 @@ const PROVIDER_ICONS: Record<string, React.ElementType> = {
 };
 
 const PROVIDER_COLORS: Record<string, { color: string; bg: string }> = {
+  'Google (Gemini)': { color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
   'Meta (Groq)': { color: 'text-purple-500', bg: 'bg-purple-500/10' },
   'Google (Groq)': { color: 'text-blue-500', bg: 'bg-blue-500/10' },
   'Moonshot AI (Groq)': { color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
@@ -106,7 +108,7 @@ const ModelSelector = () => {
           <div className="p-3 border-b border-gray-100 dark:border-white/5 flex items-center gap-2">
             <LayoutGrid size={14} className="text-primary" />
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Select AI Model</p>
-            <span className="ml-auto text-[10px] text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-full">Groq LPU • Instant</span>
+            <span className="ml-auto text-[10px] text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-full">Gemini & Groq • Instant</span>
           </div>
           <div className="p-2 max-h-[420px] overflow-y-auto space-y-1">
             {models.map((model) => {
@@ -161,7 +163,7 @@ const ModelSelector = () => {
             })}
           </div>
           <div className="p-3 border-t border-gray-100 dark:border-white/5">
-            <p className="text-[10px] text-gray-400 text-center">All models run on <span className="text-primary font-medium">Groq LPU</span> — ultra-fast inference</p>
+            <p className="text-[10px] text-gray-400 text-center">Powered by <span className="text-primary font-medium">Google Gemini</span> & Cloud Inference</p>
           </div>
         </div>
       )}

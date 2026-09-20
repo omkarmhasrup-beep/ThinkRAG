@@ -1,10 +1,2 @@
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: 'https://thinkrag-1.onrender.com',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
+import api from './services/api';
 export default api;

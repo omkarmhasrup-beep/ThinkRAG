@@ -2,7 +2,9 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
-    DATABASE_URL: str
+    DATABASE_URL: str = "sqlite:///./rag.db"
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.1-8b-instant"
 

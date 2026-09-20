@@ -3,10 +3,14 @@ from ..vectorstore import get_vector_store
 
 def process_file_and_embed(text: str, filename: str, user_id: int, file_id: int = None):
     print(f"Processing and embedding {filename} for user {user_id} (file_id={file_id})...")
-    documents = chunk_text(text, filename)
+    try:
+        documents = chunk_text(text, filename)
+    except Exception as e:
+        print(f"Error processing {filename}: {e}")
+        raise
+        
     if not documents:
-        print(f"No valid chunks extracted from {filename}")
-        return
+        raise ValueError(f"No valid chunks extracted from {filename}")
         
     if file_id is not None:
         for doc in documents:

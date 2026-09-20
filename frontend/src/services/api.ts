@@ -1,13 +1,10 @@
 import axios from 'axios';
 
-// Use environment variable if available, otherwise fallback to localhost
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+// Use environment variable if available, otherwise fallback to deployed backend
+const API_URL = import.meta.env.VITE_API_URL || 'https://thinkrag-1.onrender.com';
 
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 

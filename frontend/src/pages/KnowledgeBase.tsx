@@ -34,16 +34,27 @@ const KnowledgeBase = () => {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
+    const inputElement = e.target;
     if (!files || files.length === 0) return;
 
     setUploading(true);
     try {
+      const token = localStorage.getItem('token');
+      const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      
       for (let i = 0; i < files.length; i++) {
         const formData = new FormData();
         formData.append('file', files[i]);
-        await api.post(`/documents/upload`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+        
+        const response = await fetch(`${baseURL}/documents/upload`, {
+          method: 'POST',
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+          body: formData
         });
+        
+        if (!response.ok) {
+          console.error(`Failed to upload ${files[i].name}: ${response.statusText}`);
+        }
       }
       fetchDocuments();
       fetchStats();
@@ -51,7 +62,7 @@ const KnowledgeBase = () => {
       console.error("Upload failed", error);
     } finally {
       setUploading(false);
-      e.target.value = ''; // reset input
+      if (inputElement) inputElement.value = ''; // reset input
     }
   };
 

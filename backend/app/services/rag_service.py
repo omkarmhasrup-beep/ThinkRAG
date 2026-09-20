@@ -65,6 +65,8 @@ def _get_basic_conversation_response(question: str):
 
 def generate_rag_response(user_id: int, question: str, db=None, t_req=None, image=None):
     import time
+    t_backend_recv = time.time() * 1000
+    print(f"[E2E] 3. Backend receives request: {t_backend_recv}")
 
     # ============================================================
     # BASIC GREETING / CONVERSATION HANDLING
@@ -87,6 +89,8 @@ def generate_rag_response(user_id: int, question: str, db=None, t_req=None, imag
     # ============================================================
 
     t_context_start = time.perf_counter()
+    if t_req:
+        print("[PERF] Request received")
 
     logger.info(
         f"[PERF DIAGNOSTICS] [PERF 8] "
@@ -99,14 +103,31 @@ def generate_rag_response(user_id: int, question: str, db=None, t_req=None, imag
 
     vector_store = get_vector_store()
 
+    t_before_search = time.perf_counter()
+    if t_req:
+        print(f"[PERF] Query preprocessing: {(t_before_search - t_req) * 1000:.2f} ms")
     results = vector_store.search(
         user_id,
         question,
         k=4,
         db=db
     )
+    t_after_search = time.perf_counter()
+    
+    try:
+        import os, json
+        if os.path.exists("perf_pgvector.json"):
+            with open("perf_pgvector.json", "r") as f:
+                v_stats = json.load(f)
+                embed_ms = (v_stats["t_embed_end"] - v_stats["t_embed_start"]) * 1000
+                search_ms = (v_stats["t_search_end"] - v_stats["t_search_start"]) * 1000
+                print(f"[PERF] Embedding: {embed_ms:.2f} ms")
+                print(f"[PERF] Vector search: {search_ms:.2f} ms")
+    except Exception:
+        pass
 
     t_prompt_start = time.perf_counter()
+    print(f"[PERF] Context preparation START")
 
     logger.info(
         f"[PERF DIAGNOSTICS] [PERF 10] "
@@ -195,6 +216,8 @@ def generate_rag_response(user_id: int, question: str, db=None, t_req=None, imag
         "Output ONLY the final answer.\n"
         "3. Match the language of the user's question "
         "(English or Marathi).\n"
+        "4. Provide detailed, comprehensive, and well-structured answers "
+        "with explanations and examples when possible.\n"
     )
 
     # ============================================================
@@ -235,6 +258,8 @@ def generate_rag_response(user_id: int, question: str, db=None, t_req=None, imag
         )
 
     t_prompt_end = time.perf_counter()
+    print(f"[PERF] Context preparation END")
+    print(f"[PERF] Context preparation: {(t_prompt_end - t_after_search) * 1000:.2f} ms")
 
     logger.info(
         f"[PERF DIAGNOSTICS] [PERF 10] "
@@ -246,6 +271,9 @@ def generate_rag_response(user_id: int, question: str, db=None, t_req=None, imag
     # ============================================================
 
     llm_start = time.perf_counter()
+    t_llm_start_abs = time.time() * 1000
+    print(f"[E2E] 4. Backend starts Gemini request: {t_llm_start_abs}")
+    print(f"[PERF] Gemini API request START")
 
     logger.info(
         f"[PERF DIAGNOSTICS] [PERF 11] "
@@ -263,6 +291,9 @@ def generate_rag_response(user_id: int, question: str, db=None, t_req=None, imag
 
         if not first_token_received:
             first_token_time = time.perf_counter()
+            t_first_chunk_sent_abs = time.time() * 1000
+            print(f"[E2E] 6. First streamed chunk is sent from backend: {t_first_chunk_sent_abs}")
+            print(f"[PERF] Gemini TTFT: {(first_token_time - llm_start) * 1000:.2f} ms")
 
             logger.info(
                 f"[PERF DIAGNOSTICS] [PERF 12] "
@@ -278,6 +309,9 @@ def generate_rag_response(user_id: int, question: str, db=None, t_req=None, imag
     # ============================================================
 
     llm_end = time.perf_counter()
+    if first_token_time:
+        print(f"[PERF] Gemini streaming: {(llm_end - first_token_time) * 1000:.2f} ms")
+    print(f"[PERF] Gemini total: {(llm_end - llm_start) * 1000:.2f} ms")
 
     logger.info(
         f"[PERF DIAGNOSTICS] [PERF 13] "
@@ -297,6 +331,8 @@ def generate_rag_response(user_id: int, question: str, db=None, t_req=None, imag
     if t_req:
 
         total_time = llm_end - t_req
+        print(f"[PERF] Final response completed")
+        print(f"[PERF] Total /generate: {total_time * 1000:.2f} ms")
 
         logger.info(
             f"[PERF DIAGNOSTICS] [PERF 15] "

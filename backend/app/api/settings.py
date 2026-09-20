@@ -4,66 +4,46 @@ from ..core.config import settings
 
 router = APIRouter(prefix="/settings", tags=["Settings"])
 
-# All Groq models available for fast inference (verified working as of Aug 2026)
+# All AI models available for fast inference
 AVAILABLE_MODELS = [
     {
-        "id": "qwen/qwen3.6-27b",
-        "name": "Qwen 3.6 27B",
-        "provider": "Qwen (Groq)",
-        "speed": 90,
-        "quality": 92,
-        "context": "32K",
-        "description": "⚡ Fast & smart. Best balance of speed and quality. Recommended.",
+        "id": "gemini-2.5-flash",
+        "name": "Gemini 2.5 Flash",
+        "provider": "Google (Gemini)",
+        "speed": 98,
+        "quality": 95,
+        "context": "1M",
+        "description": "⚡ Google's fastest intelligent multimodal reasoning model. Recommended.",
         "recommended": True,
     },
     {
-        "id": "openai/gpt-oss-20b",
-        "name": "GPT OSS 20B",
-        "provider": "OpenAI (Groq)",
-        "speed": 88,
-        "quality": 88,
-        "context": "32K",
-        "description": "OpenAI open-source 20B model. Fast and reliable.",
+        "id": "gemini-2.0-flash",
+        "name": "Gemini 2.0 Flash",
+        "provider": "Google (Gemini)",
+        "speed": 96,
+        "quality": 92,
+        "context": "1M",
+        "description": "Next-gen multimodal model with low latency.",
         "recommended": False,
     },
     {
-        "id": "qwen/qwen3.8-27b",
-        "name": "Qwen 3.8 27B",
-        "provider": "Qwen (Groq)",
-        "speed": 85,
-        "quality": 94,
-        "context": "32K",
-        "description": "Latest Qwen model. Higher quality, slightly slower.",
-        "recommended": False,
-    },
-    {
-        "id": "openai/gpt-oss-120b",
-        "name": "GPT OSS 120B",
-        "provider": "OpenAI (Groq)",
-        "speed": 65,
-        "quality": 97,
-        "context": "32K",
-        "description": "Highest quality model. Best for complex reasoning tasks.",
-        "recommended": False,
-    },
-    {
-        "id": "groq/compound",
-        "name": "Groq Compound",
-        "provider": "Groq",
+        "id": "gemini-1.5-pro",
+        "name": "Gemini 1.5 Pro",
+        "provider": "Google (Gemini)",
         "speed": 80,
-        "quality": 90,
-        "context": "128K",
-        "description": "Groq's own compound model. Long context support.",
+        "quality": 98,
+        "context": "2M",
+        "description": "Highest intelligence model for complex reasoning and large docs.",
         "recommended": False,
     },
     {
-        "id": "groq/compound-mini",
-        "name": "Groq Compound Mini",
-        "provider": "Groq",
-        "speed": 95,
-        "quality": 82,
-        "context": "128K",
-        "description": "Ultra-fast compact model. Great for quick Q&A.",
+        "id": "gemini-1.5-flash",
+        "name": "Gemini 1.5 Flash",
+        "provider": "Google (Gemini)",
+        "speed": 94,
+        "quality": 90,
+        "context": "1M",
+        "description": "Fast and versatile multimodal model.",
         "recommended": False,
     },
 ]
@@ -76,7 +56,10 @@ class ModelUpdate(BaseModel):
 @router.get("/model")
 def get_current_model():
     """Get the currently active AI model."""
-    current = settings.GROQ_MODEL
+    if settings.GEMINI_API_KEY:
+        current = settings.GEMINI_MODEL
+    else:
+        current = settings.GROQ_MODEL
     matched = next((m for m in AVAILABLE_MODELS if m["id"] == current), None)
     return {
         "current_model": current,
@@ -92,6 +75,9 @@ def set_model(body: ModelUpdate):
     if body.model_id not in valid_ids:
         from fastapi import HTTPException
         raise HTTPException(status_code=400, detail=f"Invalid model id. Choose from: {valid_ids}")
-    settings.GROQ_MODEL = body.model_id
+    if body.model_id.startswith("gemini-"):
+        settings.GEMINI_MODEL = body.model_id
+    else:
+        settings.GROQ_MODEL = body.model_id
     matched = next((m for m in AVAILABLE_MODELS if m["id"] == body.model_id), None)
     return {"message": f"Model switched to {body.model_id}", "model_info": matched}

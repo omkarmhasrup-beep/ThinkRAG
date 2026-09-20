@@ -166,6 +166,7 @@ const Chat = () => {
   const sendMessage = async (overrideInput?: string) => {
     const textToSend = overrideInput || input;
     if (!textToSend.trim() || loading) return;
+    setLoading(true);
 
     // Convert first image to base64 if it exists
     let imageBase64: string | undefined;
@@ -174,6 +175,7 @@ const Chat = () => {
         const file = images[0];
         if (file.size > 5 * 1024 * 1024) {
           alert("Image is too large. Please select an image under 5MB.");
+          setLoading(false);
           return;
         }
         imageBase64 = await new Promise((resolve, reject) => {
@@ -189,6 +191,7 @@ const Chat = () => {
       } catch (e) {
         console.error("Failed to read image", e);
         alert("Failed to process the image.");
+        setLoading(false);
         return;
       }
     }
@@ -215,6 +218,7 @@ const Chat = () => {
         window.dispatchEvent(new CustomEvent('chat-updated'));
       } catch (error) {
         console.error("Failed to create chat", error);
+        setLoading(false);
         return;
       }
     }
@@ -235,19 +239,21 @@ const Chat = () => {
 
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
-    setLoading(true);
 
-    const t_ui_start = performance.now();
-    console.log(`[FRONTEND PERF DIAGNOSTICS] [FRONTEND PERF] Send clicked / Request started at ${t_ui_start} ms`);
+    const t_ui_start = Date.now();
+    console.log(`[E2E] 1. User presses Send: ${t_ui_start}`);
 
     try {
-      const API_BASE = 'https://thinkrag-1.onrender.com';
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://thinkrag-1.onrender.com';
       const token = localStorage.getItem('token');
 
       const payload: any = { role: 'user', content: userMessage.content };
       if (imageBase64) {
         payload.image = imageBase64;
       }
+
+      const t_fetch_start = Date.now();
+      console.log(`[E2E] 2. Frontend starts POST /generate: ${t_fetch_start}`);
 
       const response = await fetch(`${API_BASE}/messages/${targetChatId}/generate`, {
         method: 'POST',
@@ -270,9 +276,10 @@ const Chat = () => {
         if (done) break;
 
         if (!firstChunkReceived) {
-          const t_first_chunk = performance.now();
+          const t_first_chunk = Date.now();
           firstChunkReceived = true;
-          console.log(`[FRONTEND PERF DIAGNOSTICS] [FRONTEND PERF] First response chunk received / First visible token rendered at ${t_first_chunk} ms (took ${t_first_chunk - t_ui_start} ms)`);
+          console.log(`[E2E] 7. Frontend receives first chunk: ${t_first_chunk}`);
+          console.log(`[E2E] 8. First visible token rendered: ${t_first_chunk}`);
         }
 
         const chunk = decoder.decode(value, { stream: true });
@@ -284,8 +291,8 @@ const Chat = () => {
         });
       }
 
-      const t_stream_end = performance.now();
-      console.log(`[FRONTEND PERF DIAGNOSTICS] [FRONTEND PERF] Stream completed at ${t_stream_end} ms (Total UI time: ${t_stream_end - t_ui_start} ms)`);
+      const t_stream_end = Date.now();
+      console.log(`[E2E] 9. Final response rendered: ${t_stream_end}`);
 
       setMessages(prev => {
         const newMessages = [...prev];
@@ -384,7 +391,7 @@ const Chat = () => {
     }
 
     try {
-      const API_BASE = 'http://127.0.0.1:8000';
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://thinkrag-1.onrender.com';
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}/messages/${chatId}/${msgId}/regenerate`, {
         method: 'PUT',
@@ -592,50 +599,7 @@ const Chat = () => {
                               )}
                             </div>
 
-                            {/* AI Additions (Cards & Context) */}
-                            {!msg.isStreaming && cleanContent && chunks.length > 0 && (
-                              <div className="mt-4 flex flex-col gap-3">
 
-                                {/* Sources Card */}
-                                <div className="bg-white dark:bg-[#222] border border-gray-100 dark:border-white/5 rounded-xl p-3 shadow-sm">
-                                  <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                    <FileText size={16} className="text-primary" />
-                                    Sources
-                                  </div>
-                                  <div className="flex flex-wrap gap-2">
-                                    {uniqueSources.map((src: any, i: number) => (
-                                      <div key={i} className="flex items-center gap-2 bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-lg p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#1a1a1a] transition-colors group/source">
-                                        <div className="bg-red-500/10 text-red-500 p-1.5 rounded-md">
-                                          <FileType size={16} />
-                                        </div>
-                                        <div className="flex flex-col">
-                                          <span className="text-[13px] font-medium text-gray-800 dark:text-gray-200 group-hover/source:text-primary transition-colors">
-                                            {src.source.replace(/^user_\d+_/, '')}
-                                          </span>
-                                          <span className="text-[10px] text-gray-500">Document</span>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                <RetrievedContextPanel data={chunks} />
-
-                                {/* Metadata Chips */}
-                                <div className="flex flex-wrap items-center gap-2 mt-1">
-                                  <AiConfidenceCard confidence={avgConfidence} />
-                                  <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full text-[11px] font-medium">
-                                    <span>⚡</span> 1.2 sec
-                                  </div>
-                                  <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full text-[11px] font-medium">
-                                    <span>🧠</span> Llama 3
-                                  </div>
-                                  <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full text-[11px] font-medium">
-                                    <span>📄</span> {uniqueSources.length} Source{uniqueSources.length !== 1 ? 's' : ''}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
                           </div>
                         ) : (
                           <ThinkingIndicator />
