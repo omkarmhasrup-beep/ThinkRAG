@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { BrainCircuit, Loader2, CheckCircle2, XCircle, Sun, Moon } from 'lucide-react';
+import { BrainCircuit, Loader2, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 

@@ -1,18 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Send, Bot, Pencil, Plus, BookmarkPlus, Check, Download, X as CloseIcon, Maximize2, Loader2, FileType, Copy, RefreshCw, Share, ThumbsUp, ThumbsDown, FileText } from 'lucide-react';
+import { Send, Bot, Pencil, Plus, BookmarkPlus, Check, Download, X as CloseIcon, Maximize2, Loader2, FileType, Copy, RefreshCw, Share, ThumbsUp, ThumbsDown } from 'lucide-react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import api from '../services/api';
 
 import DocumentViewer from '../components/DocumentViewer';
-import RetrievedContextPanel from '../components/RetrievedContextPanel';
 import ThinkingIndicator from '../components/ThinkingIndicator';
 import SuggestedQuestions from '../components/SuggestedQuestions';
 import ModelSelector from '../components/ModelSelector';
 import VoiceChat, { AiSpeakingIndicator } from '../components/VoiceChat';
 import ExportModal from '../components/ExportModal';
 import CodeBlock from '../components/CodeBlock';
-import AiConfidenceCard from '../components/AiConfidenceCard';
 
 /**
  * Strip <think>…</think> and similar reasoning/chain-of-thought blocks
@@ -530,17 +528,6 @@ const Chat = () => {
               // previously stored messages before rendering.
               cleanContent = stripThinkBlocks(cleanContent);
 
-
-              const uniqueSources = chunks.reduce((acc: any[], chunk) => {
-                if (!acc.find(s => s.source === chunk.source)) {
-                  acc.push(chunk);
-                }
-                return acc;
-              }, []);
-
-              const avgConfidence = chunks.length > 0
-                ? Math.round(chunks.reduce((acc, curr) => acc + curr.score, 0) / chunks.length)
-                : 0;
 
               const isLastUserMessage = msg.role === 'user' && idx === messages.findLastIndex(m => m.role === 'user');
 

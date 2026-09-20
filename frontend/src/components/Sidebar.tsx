@@ -117,7 +117,12 @@ const Sidebar = ({ onClose }: { onClose: () => void }) => {
         if (isMounted) setServerStatus('error');
       }
     };
+    
+    // Initial check
     checkServerStatus();
+    
+    // Check every 15 seconds
+    const statusInterval = setInterval(checkServerStatus, 15000);
 
     fetchChats();
 
@@ -136,6 +141,7 @@ const Sidebar = ({ onClose }: { onClose: () => void }) => {
     }
 
     return () => {
+      clearInterval(statusInterval);
       window.removeEventListener('chat-updated', handleChatUpdated);
       isMounted = false;
     };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BrainCircuit, Loader2, ArrowLeft, Sun, Moon } from 'lucide-react';
+import { BrainCircuit, Loader2, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import api from '../services/api';
 
@@ -9,7 +9,7 @@ const ForgotPassword: React.FC = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+
   const { theme, setTheme } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
