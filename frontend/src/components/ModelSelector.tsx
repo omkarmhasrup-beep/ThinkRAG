@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Sparkles, Zap, Brain, Bot, Cpu, Check, Activity, Award, Loader2, LayoutGrid } from 'lucide-react';
-import api from '../services/api';
+
 
 interface ModelInfo {
   id: string;
@@ -43,7 +43,7 @@ const HARDCODED_MODELS: ModelInfo[] = [
 
 const ModelSelector = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [models, setModels] = useState<ModelInfo[]>(HARDCODED_MODELS);
+  const [models] = useState<ModelInfo[]>(HARDCODED_MODELS);
   const [selected, setSelected] = useState<ModelInfo | null>(null);
   const [switching, setSwitching] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);

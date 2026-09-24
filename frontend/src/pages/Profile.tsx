@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Loader2, CheckCircle2, AlertCircle, Check, Edit2, Camera, X } from 'lucide-react';
+import { User, Loader2, CheckCircle2, AlertCircle, Check, Edit2 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
