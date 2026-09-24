@@ -1,7 +1,9 @@
 import axios from 'axios';
 
-// Use environment variable if available, otherwise fallback to deployed backend
-const API_URL = import.meta.env.VITE_API_URL || 'https://thinkrag-1.onrender.com';
+// Use the local backend during development and the deployed backend in production.
+const API_URL = import.meta.env.VITE_API_URL || (
+  import.meta.env.DEV ? 'http://127.0.0.1:8000' : 'https://thinkrag-1.onrender.com'
+);
 
 const api = axios.create({
   baseURL: API_URL,

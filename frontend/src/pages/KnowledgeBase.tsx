@@ -71,8 +71,9 @@ const KnowledgeBase = () => {
       await api.delete(`/documents/${docId}`);
       setDocuments(prev => prev.filter(doc => doc.id !== docId));
       fetchStats();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to delete document", error);
+      alert("Failed to delete document: " + (error.response?.data?.detail || error.message));
     }
   };
 
@@ -159,7 +160,7 @@ const KnowledgeBase = () => {
               ) : (
                 <div className="space-y-3">
                   {documents.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between p-4 border border-gray-100 dark:border-gray-200 dark:border-white/5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-50 dark:bg-white/5 transition-colors">
+                    <div key={doc.id} className="flex items-center justify-between p-4 border border-gray-100 dark:border-white/5 rounded-xl hover:bg-gray-50 dark:bg-white/5 dark:hover:bg-white/10 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                           <FileText size={20} />

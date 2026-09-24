@@ -57,16 +57,24 @@ def generate_message(chat_id: int, message: schemas.MessageCreate, db: Session =
         def run_rag():
             gen_db = SessionLocal()
             try:
-                # Save user message in background to save 800ms UI delay
+                # Save user message in a separate background thread to prevent UI and RAG delay
                 content_to_save = message.content
                 if message.image:
                     content_to_save += f"\n\n![Uploaded Image](data:image/jpeg;base64,{message.image})"
                 
-                user_msg = models.Message(chat_id=chat_id, role=message.role, content=content_to_save)
-                gen_db.add(user_msg)
-                gen_db.commit()
+                def save_user_msg():
+                    db_u = SessionLocal()
+                    try:
+                        u_msg = models.Message(chat_id=chat_id, role=message.role, content=content_to_save)
+                        db_u.add(u_msg)
+                        db_u.commit()
+                    finally:
+                        db_u.close()
+                        
+                import threading
+                threading.Thread(target=save_user_msg).start()
                 
-                for chunk in generate_rag_response(current_user.id, message.content, db=gen_db, t_req=t_req, image=message.image):
+                for chunk in generate_rag_response(current_user.id, message.content, db=gen_db, t_req=t_req, image=message.image, model_id=message.model_id):
                     asyncio.run_coroutine_threadsafe(queue.put(chunk), loop)
             except Exception as e:
                 asyncio.run_coroutine_threadsafe(queue.put(e), loop)
@@ -131,7 +139,7 @@ def regenerate_message(chat_id: int, message_id: int, message: schemas.MessageCr
         gen_db = SessionLocal()
         full_content = ""
         try:
-            for chunk in generate_rag_response(current_user.id, message.content, db=gen_db):
+            for chunk in generate_rag_response(current_user.id, message.content, db=gen_db, model_id=message.model_id):
                 full_content += chunk
                 yield chunk
                 

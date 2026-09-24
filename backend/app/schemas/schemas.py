@@ -7,6 +7,9 @@ class UserCreate(BaseModel):
     email: str
     password: str = Field(..., min_length=8)
 
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+
 class ForgotPasswordRequest(BaseModel):
     email: str
 
@@ -35,6 +38,7 @@ class MessageBase(BaseModel):
 
 class MessageCreate(MessageBase):
     image: Optional[str] = None
+    model_id: Optional[str] = None
 
 class MessageResponse(MessageBase):
     id: int

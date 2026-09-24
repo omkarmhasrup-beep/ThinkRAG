@@ -1,0 +1,21 @@
+Pandas Data Analysis Documentation
+Official Reference Guide to DataFrames, Series, GroupBy, and Transformations
+
+1. DataFrames & Series Operations
+Pandas provides data structures (`Series` for 1D and `DataFrame` for 2D labeled data) optimized for data manipulation, cleaning, and analysis using columnar storage and vectorized operations.
+
+import pandas as pd
+df = pd.DataFrame({
+'department': ['Engineering', 'Engineering', 'Marketing', 'Sales'],
+'employee': ['Alice', 'Bob', 'Charlie', 'David'],
+'salary': [120000, 115000, 95000, 105000]
+})
+summary = df.groupby('department')['salary'].agg(['mean', 'max', 'count'])
+print("Salary Summary:\n", summary)
+
+2. Data Filtering & Merging
+Pandas enables relational database-style operations including inner/left/right/outer joins using `merge()`, index alignment, and conditional boolean slicing.
+
+# Boolean filtering and merging
+high_earners = df[df['salary'] >= 110000]
+print("High Earners:\n", high_earners[['employee', 'salary']])

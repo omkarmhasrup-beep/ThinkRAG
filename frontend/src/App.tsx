@@ -6,6 +6,7 @@ import KnowledgeBase from './pages/KnowledgeBase';
 import Search from './pages/Search';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import Profile from './pages/Profile';
 import Bookmarks from './pages/Bookmarks';
 import Memory from './pages/Memory';
 import Login from './pages/Login';
@@ -17,6 +18,7 @@ import { AuthProvider } from './context/AuthContext';
 
 import React, { useEffect } from 'react';
 import api from './api';
+import Cursor from './components/Cursor';
 
 class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
   constructor(props: any) {
@@ -58,6 +60,7 @@ function App() {
     <ErrorBoundary>
     <ThemeProvider>
       <AuthProvider>
+        <Cursor />
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -73,6 +76,7 @@ function App() {
                 <Route path="search" element={<Search />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="settings" element={<Settings />} />
+                <Route path="profile" element={<Profile />} />
                 <Route path="bookmarks" element={<Bookmarks />} />
                 <Route path="memory" element={<Memory />} />
               </Route>

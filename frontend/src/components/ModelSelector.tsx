@@ -35,15 +35,30 @@ const PROVIDER_COLORS: Record<string, { color: string; bg: string }> = {
   'Groq': { color: 'text-orange-500', bg: 'bg-orange-500/10' },
 };
 
+const HARDCODED_MODELS: ModelInfo[] = [
+  { id: 'qwen/qwen3.8-27b', name: 'Qwen 27B', provider: 'Qwen (Groq)', speed: 95, quality: 90, context: '32K', description: 'Fast and smart general purpose model', recommended: true },
+  { id: 'openai/gpt-oss-120b', name: 'GPT OSS 120B', provider: 'OpenAI (Groq)', speed: 75, quality: 95, context: '128K', description: 'Very large and capable model', recommended: false },
+  { id: 'allam-2-7b', name: 'Allam 2 7B', provider: 'Meta (Groq)', speed: 99, quality: 80, context: '8K', description: 'Extremely fast, lightweight model', recommended: false },
+];
+
 const ModelSelector = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [models, setModels] = useState<ModelInfo[]>([]);
+  const [models, setModels] = useState<ModelInfo[]>(HARDCODED_MODELS);
   const [selected, setSelected] = useState<ModelInfo | null>(null);
   const [switching, setSwitching] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchCurrentModel();
+    // Try loading from localStorage first
+    const savedModelId = localStorage.getItem('selectedModelId');
+    if (savedModelId) {
+      const found = HARDCODED_MODELS.find(m => m.id === savedModelId);
+      if (found) setSelected(found);
+      else setSelected(HARDCODED_MODELS[0]);
+    } else {
+      setSelected(HARDCODED_MODELS[0]);
+    }
+
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -53,29 +68,18 @@ const ModelSelector = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchCurrentModel = async () => {
-    try {
-      const res = await api.get('/settings/model');
-      setModels(res.data.available_models);
-      setSelected(res.data.model_info || res.data.available_models[0]);
-    } catch (e) {
-      // Fallback: just show a placeholder
-      setSelected({ id: 'llama-3.1-8b-instant', name: 'Llama 3.1 Instant', provider: 'Meta (Groq)', speed: 99, quality: 82, context: '128K', description: 'Fastest model', recommended: true });
-    }
-  };
-
   const switchModel = async (model: ModelInfo) => {
     if (model.id === selected?.id) { setIsOpen(false); return; }
     setSwitching(true);
-    try {
-      await api.post('/settings/model', { model_id: model.id });
-      setSelected(model);
-    } catch (e) {
-      console.error('Failed to switch model', e);
-    } finally {
+    
+    localStorage.setItem('selectedModelId', model.id);
+    setSelected(model);
+    
+    // Slight artificial delay for UX
+    setTimeout(() => {
       setSwitching(false);
       setIsOpen(false);
-    }
+    }, 300);
   };
 
   const getIcon = (provider: string) => PROVIDER_ICONS[provider] || Cpu;

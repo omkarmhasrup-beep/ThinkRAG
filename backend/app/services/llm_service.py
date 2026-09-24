@@ -65,6 +65,11 @@ def _filter_think_blocks(raw_stream):
                     inside_think = True
                     continue
 
+                if "<" not in buffer:
+                    yield buffer
+                    buffer = ""
+                    break
+
                 safe_end = len(buffer) - MAX_PARTIAL_TAG_LENGTH
                 if safe_end > 0:
                     output = buffer[:safe_end]
@@ -113,9 +118,10 @@ def get_gemini_client():
 def _stream_gemini(system_prompt: str, question: str, image: str = None):
     from google.genai import types
     import base64
+    import time
 
     client = get_gemini_client()
-    model_name = settings.GEMINI_MODEL or "gemini-2.5-flash"
+    model_name = settings.GEMINI_MODEL or "gemini-3.6-flash"
 
     contents = []
     if image:
@@ -135,19 +141,32 @@ def _stream_gemini(system_prompt: str, question: str, image: str = None):
     config = types.GenerateContentConfig(
         system_instruction=system_prompt,
         temperature=0.7,
-        max_output_tokens=2048,
+        max_output_tokens=1024,
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
     )
 
-    response = client.models.generate_content_stream(
-        model=model_name,
-        contents=contents,
-        config=config,
-    )
+    max_retries = 3
+    base_delay = 0.5
 
-    for chunk in response:
-        if chunk.text:
-            yield chunk.text
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content_stream(
+                model=model_name,
+                contents=contents,
+                config=config,
+            )
+        
+            for chunk in response:
+                if chunk.text:
+                    yield chunk.text
+            return
+        except Exception as e:
+            error_str = str(e)
+            if ("503" in error_str and "UNAVAILABLE" in error_str) and attempt < max_retries - 1:
+                print(f"[GEMINI] 503 Unavailable. Retrying in {base_delay * (2 ** attempt)}s (Attempt {attempt + 1}/{max_retries})...")
+                time.sleep(base_delay * (2 ** attempt))
+                continue
+            raise e
 
 
 # ============================================================
@@ -157,7 +176,8 @@ def _stream_gemini(system_prompt: str, question: str, image: str = None):
 def generate_llm_response(
     system_prompt: str,
     question: str,
-    image: str = None
+    image: str = None,
+    model_id: str = None
 ):
 
     # ============================================================
@@ -181,7 +201,7 @@ def generate_llm_response(
         try:
             
             user_content = question
-            model_to_use = settings.GROQ_MODEL
+            model_to_use = model_id or settings.GROQ_MODEL
             
             if image:
                 user_content = [

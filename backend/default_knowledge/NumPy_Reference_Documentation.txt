@@ -1,0 +1,22 @@
+NumPy Reference Documentation
+Official Guide to N-Dimensional Arrays, Universal Functions, and Vectorization
+
+1. N-Dimensional Arrays (ndarray)
+NumPy provides vectorised multidimensional arrays (`ndarray`) stored in contiguous memory blocks. Memory layouts can be C-contiguous (row-major) or Fortran-contiguous (column-major).
+
+import numpy as np
+# Create 2D Array and compute matrix operations
+a = np.array([[1, 2], [3, 4]], dtype=np.float64)
+b = np.array([[5, 6], [7, 8]], dtype=np.float64)
+product = np.matmul(a, b)
+eigenvalues, eigenvectors = np.linalg.eig(product)
+print("Matrix Product:\n", product)
+print("Eigenvalues:", eigenvalues)
+
+2. Universal Functions & Broadcasting
+Broadcasting rules allow numpy operations on arrays with differing dimensions without copying data. Dimensions are aligned right-to-left and checked for equality or dimension size equal to 1.
+
+data = np.arange(12).reshape((4, 3))
+mean = data.mean(axis=0)
+normalized = data - mean # Broadcasts (4,3) minus (3,)
+print("Normalized Shape:", normalized.shape)

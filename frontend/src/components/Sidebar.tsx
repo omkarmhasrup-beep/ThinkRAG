@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Plus, MessageSquare, Database, Settings, Trash2, X, Sun, Moon, Search,
   Pin, Bookmark, Brain, BarChart2, Folder, FolderPlus, ChevronDown, ChevronRight,
-  Loader2, AlertCircle, RefreshCw, LogOut, User as UserIcon, CheckCircle2
+  Loader2, AlertCircle, RefreshCw, LogOut, User as UserIcon, CheckCircle2, Edit2
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -585,15 +585,20 @@ const Sidebar = ({ onClose }: { onClose: () => void }) => {
 
       {/* User profile & Logout */}
       <div className="p-2 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
-        <div className="flex items-center gap-2 overflow-hidden px-1">
-          <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center shrink-0">
-            <UserIcon size={16} className="text-indigo-600 dark:text-indigo-400" />
+        <button 
+          onClick={() => { navigate('/profile'); window.innerWidth < 1024 && onClose(); }}
+          className="flex items-center gap-2 overflow-hidden px-1 text-left hover:bg-gray-50 dark:hover:bg-white/5 p-1 rounded-lg transition-colors flex-1"
+          title="Edit Profile"
+        >
+          <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center shrink-0 relative group">
+            <UserIcon size={16} className="text-indigo-600 dark:text-indigo-400 group-hover:opacity-0 transition-opacity" />
+            <Edit2 size={14} className="text-indigo-600 dark:text-indigo-400 absolute opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="truncate">
             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user?.username}</p>
             <p className="text-[10px] text-gray-500 truncate">{user?.email}</p>
           </div>
-        </div>
+        </button>
         <button
           onClick={() => { logout(); navigate('/login'); }}
           className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"

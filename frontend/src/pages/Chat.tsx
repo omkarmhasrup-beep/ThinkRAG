@@ -246,6 +246,10 @@ const Chat = () => {
       const token = localStorage.getItem('token');
 
       const payload: any = { role: 'user', content: userMessage.content };
+      const selectedModelId = localStorage.getItem('selectedModelId');
+      if (selectedModelId) {
+        payload.model_id = selectedModelId;
+      }
       if (imageBase64) {
         payload.image = imageBase64;
       }
@@ -397,7 +401,11 @@ const Chat = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ role: 'user', content: editContent })
+        body: JSON.stringify({ 
+          role: 'user', 
+          content: editContent,
+          model_id: localStorage.getItem('selectedModelId') || undefined
+        })
       });
 
       if (!response.ok) throw new Error("Stream failed");

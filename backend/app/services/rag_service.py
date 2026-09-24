@@ -63,7 +63,7 @@ def _get_basic_conversation_response(question: str):
     return None
 
 
-def generate_rag_response(user_id: int, question: str, db=None, t_req=None, image=None):
+def generate_rag_response(user_id: int, question: str, db=None, t_req=None, image=None, model_id=None):
     import time
     t_backend_recv = time.time() * 1000
     print(f"[E2E] 3. Backend receives request: {t_backend_recv}")
@@ -206,18 +206,15 @@ def generate_rag_response(user_id: int, question: str, db=None, t_req=None, imag
     # ============================================================
 
     base_prompt = (
-        "You are a precise, helpful AI assistant that answers "
-        "questions based on provided documents. "
+        "You are a precise, helpful AI assistant.\n"
         "IMPORTANT RULES:\n"
-        "1. Answer ONLY using the provided context. "
-        "Do NOT use any prior knowledge.\n"
-        "2. NEVER show your reasoning, thinking steps, analysis, "
-        "chain-of-thought, or any intermediate processing. "
-        "Output ONLY the final answer.\n"
-        "3. Match the language of the user's question "
-        "(English or Marathi).\n"
-        "4. Provide detailed, comprehensive, and well-structured answers "
-        "with explanations and examples when possible.\n"
+        "1. Answer directly and concisely.\n"
+        "2. Do not repeat the user's question.\n"
+        "3. Avoid unnecessary introductions, conclusions, or filler.\n"
+        "4. Prefer short, useful answers unless the user explicitly requests a detailed explanation.\n"
+        "5. For knowledge-base questions, use the provided context as the primary source. Do not invent information.\n"
+        "6. If required information is not in the context, clearly state that you do not have enough information.\n"
+        "7. Match the language of the user's question (e.g., English or Marathi).\n"
     )
 
     # ============================================================
@@ -227,18 +224,7 @@ def generate_rag_response(user_id: int, question: str, db=None, t_req=None, imag
     if context_text.strip():
 
         system_prompt = base_prompt + (
-            "TASK: Answer the user's question strictly based "
-            "on the context below.\n"
-
-            "If the answer is not present in the context, "
-            "respond by saying that you don't have enough "
-            "information in the provided knowledge base to "
-            "answer that. "
-
-            "CRITICAL: You MUST translate this fallback response "
-            "into the SAME LANGUAGE as the user's question "
-            "(e.g. if the user asks in Marathi, reply in Marathi).\n\n"
-
+            "TASK: Answer the user's question based on the context below.\n\n"
             "Context:\n"
             + context_text
         )
@@ -246,15 +232,9 @@ def generate_rag_response(user_id: int, question: str, db=None, t_req=None, imag
     else:
 
         system_prompt = base_prompt + (
-            "TASK: No documents were found. "
-
-            "Respond by saying that you don't have enough "
-            "information in the provided knowledge base to "
-            "answer that. "
-
-            "CRITICAL: You MUST translate this fallback response "
-            "into the SAME LANGUAGE as the user's question "
-            "(e.g. if the user asks in Marathi, reply in Marathi)."
+            "TASK: No documents were found in the context. "
+            "If this is a normal general question, provide a useful answer. "
+            "If it requires specific knowledge from the database, state that you do not have enough information."
         )
 
     t_prompt_end = time.perf_counter()
@@ -286,7 +266,8 @@ def generate_rag_response(user_id: int, question: str, db=None, t_req=None, imag
     for chunk in generate_llm_response(
         system_prompt,
         question,
-        image=image
+        image=image,
+        model_id=model_id
     ):
 
         if not first_token_received:

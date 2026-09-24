@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime, timezone
@@ -10,11 +10,45 @@ from .. import database, models
 from ..schemas import schemas
 from ..core.security import verify_password, get_password_hash, create_access_token, get_current_user
 from ..core.config import settings
+from ..workers.document_worker import process_file_and_embed
+from ..database import SessionLocal
+import os
+
+def add_default_documents_bg(user_id: int):
+    db = SessionLocal()
+    try:
+        default_dir = os.path.join(os.getcwd(), "default_knowledge")
+        if not os.path.exists(default_dir):
+            return
+            
+        for filename in os.listdir(default_dir):
+            if filename.endswith(".txt"):
+                filepath = os.path.join(default_dir, filename)
+                with open(filepath, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    
+                new_file = models.File(
+                    user_id=user_id,
+                    filename=filename,
+                    filepath="default",
+                    filetype="txt",
+                    content=content
+                )
+                db.add(new_file)
+                db.commit()
+                db.refresh(new_file)
+                
+                try:
+                    process_file_and_embed(content, filename, user_id, file_id=new_file.id)
+                except Exception as e:
+                    print(f"Error embedding default doc {filename}: {e}")
+    finally:
+        db.close()
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=schemas.UserResponse)
-def register_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
+def register_user(user: schemas.UserCreate, background_tasks: BackgroundTasks, db: Session = Depends(database.get_db)):
     user.email = user.email.strip()
     user.username = user.username.strip()
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
@@ -34,6 +68,9 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(database.get_d
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    
+    background_tasks.add_task(add_default_documents_bg, new_user.id)
+    
     return new_user
 
 @router.post("/login", response_model=schemas.Token)
@@ -61,6 +98,18 @@ def login_for_access_token(
 
 @router.get("/me", response_model=schemas.UserResponse)
 def read_users_me(current_user: models.User = Depends(get_current_user)):
+    return current_user
+
+@router.put("/me", response_model=schemas.UserResponse)
+def update_users_me(update_data: schemas.UserUpdate, db: Session = Depends(database.get_db), current_user: models.User = Depends(get_current_user)):
+    if update_data.username is not None:
+        # Check if username is already taken by someone else
+        existing_user = db.query(models.User).filter(models.User.username == update_data.username, models.User.id != current_user.id).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Username already registered")
+        current_user.username = update_data.username
+    db.commit()
+    db.refresh(current_user)
     return current_user
 
 @router.post("/forgot-password")

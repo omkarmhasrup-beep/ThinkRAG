@@ -44,7 +44,7 @@ class StorageService:
         """
         Deletes a file from S3 if configured.
         """
-        if not self.use_s3 or object_key == "db-only" or not object_key.startswith("s3://"):
+        if not self.use_s3 or not object_key or object_key == "db-only" or not object_key.startswith("s3://"):
             return
             
         try:
