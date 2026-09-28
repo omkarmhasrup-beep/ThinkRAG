@@ -23,6 +23,7 @@ def extract_text_from_file(filepath: str, filetype: str) -> str:
             doc = docx.Document(filepath)
             text = "\n".join([para.text for para in doc.paragraphs])
         elif filetype == "pptx":
+            # pyrefly: ignore [missing-import]
             from pptx import Presentation
             prs = Presentation(filepath)
             for slide in prs.slides:

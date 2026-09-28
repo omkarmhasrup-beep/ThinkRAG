@@ -552,7 +552,7 @@ const Chat = () => {
                     </div>
                   )}
 
-                  <div className={`flex flex-col gap-2 max-w-[85%] group ${msg.role === 'ai' ? 'w-full' : ''}`}>
+                  <div className={`flex flex-col gap-2 max-w-[85%] group ${msg.role === 'ai' ? 'flex-1' : ''}`}>
                     <div className={`px-6 py-5 rounded-[16px] shadow-[0_4px_30px_rgba(0,0,0,0.05)] ${msg.role === 'user'
                       ? 'bg-primary text-white rounded-br-sm shadow-md'
                       : 'bg-white/70 dark:bg-[#1a1a1a]/80 backdrop-blur-md border border-gray-100 dark:border-white/5 rounded-bl-sm'

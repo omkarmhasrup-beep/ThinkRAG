@@ -525,7 +525,7 @@ const Sidebar = ({ onClose }: { onClose: () => void }) => {
         <Link
           to="/knowledge-base"
           onClick={() => window.innerWidth < 1024 && onClose()}
-          className={`flex items-center gap-3 py-1.5 px-2 rounded-lg transition-colors ${location.pathname === '/knowledge-base' ? 'bg-primary/20 text-gray-900 dark:text-white' : 'hover:bg-gray-50 dark:bg-white/5'}`}
+          className={`flex items-center gap-3 py-1.5 px-2 rounded-lg transition-colors ${location.pathname === '/knowledge-base' ? 'bg-primary/20 text-gray-900 dark:text-white' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
         >
           <Database size={16} />
           <span className="text-sm font-medium">Knowledge Base</span>
@@ -568,7 +568,7 @@ const Sidebar = ({ onClose }: { onClose: () => void }) => {
       <div className="px-3 py-1.5 border-t border-gray-100 dark:border-white/5 space-y-0.5">
         <button
           onClick={toggleTheme}
-          className="w-full flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-gray-50 dark:bg-white/5 transition-colors text-left"
+          className="w-full flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-left"
         >
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           <span className="text-sm font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>

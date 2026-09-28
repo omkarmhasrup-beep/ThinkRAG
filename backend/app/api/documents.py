@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
 from .. import database
@@ -20,6 +20,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.post("/upload")
 async def upload_document(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...), 
     db: Session = Depends(database.get_db), 
     current_user: models.User = Depends(get_current_user)
@@ -60,17 +61,12 @@ async def upload_document(
         if os.path.exists(file_path):
             os.remove(file_path)
         
-        try:
-            process_file_and_embed(extracted_text, file.filename, current_user.id, file_id=new_file.id)
-        except Exception as e:
-            # Clean up the DB record if processing/embedding fails
-            db.delete(new_file)
-            db.commit()
-            raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}")
+        # Offload processing and embedding to background task
+        background_tasks.add_task(process_file_and_embed, extracted_text, file.filename, current_user.id, file_id=new_file.id)
             
         uploaded.append({"file_id": new_file.id, "filename": file.filename})
     
-    return {"message": f"{len(uploaded)} file(s) uploaded and processed successfully", "files": uploaded}
+    return {"message": f"{len(uploaded)} file(s) uploaded and queued for processing", "files": uploaded}
 
 @router.get("")
 def get_documents(db: Session = Depends(database.get_db), current_user: models.User = Depends(get_current_user)):
