@@ -33,16 +33,21 @@ def run_tests():
     # ---------------------------------------------------------
     write_report("\n## Phase 3: Authentication Testing\n")
     
+    import uuid
+    suffix = str(uuid.uuid4())[:8]
+    user_a_name = f"testuser_a_{suffix}"
+    user_b_name = f"testuser_b_{suffix}"
+    
     # Create test user A
-    user_a = {"username": "testuser_a", "email": "a@test.com", "password": "Password123!"}
-    requests.post(f"{BASE_URL}/register", json=user_a)
+    user_a = {"username": user_a_name, "email": f"a_{suffix}@test.com", "password": "Password123!"}
+    requests.post(f"{BASE_URL}/auth/register", json=user_a)
     
     # Create test user B
-    user_b = {"username": "testuser_b", "email": "b@test.com", "password": "Password123!"}
-    requests.post(f"{BASE_URL}/register", json=user_b)
+    user_b = {"username": user_b_name, "email": f"b_{suffix}@test.com", "password": "Password123!"}
+    requests.post(f"{BASE_URL}/auth/register", json=user_b)
     
     # Test valid login User A
-    r = requests.post(f"{BASE_URL}/login", data={"username": "testuser_a", "password": "Password123!"})
+    r = requests.post(f"{BASE_URL}/auth/login", data={"username": user_a_name, "password": "Password123!"})
     if r.status_code == 200:
         token_a = r.json().get("access_token")
         write_report("- ✅ Valid login successful")
@@ -51,14 +56,14 @@ def run_tests():
         write_report(f"- ❌ Valid login failed: {r.status_code}")
         
     # Test valid login User B
-    r = requests.post(f"{BASE_URL}/login", data={"username": "testuser_b", "password": "Password123!"})
+    r = requests.post(f"{BASE_URL}/auth/login", data={"username": user_b_name, "password": "Password123!"})
     if r.status_code == 200:
         token_b = r.json().get("access_token")
     else:
         token_b = None
 
     # Invalid password
-    r = requests.post(f"{BASE_URL}/login", data={"username": "testuser_a", "password": "WrongPassword"})
+    r = requests.post(f"{BASE_URL}/auth/login", data={"username": user_a_name, "password": "WrongPassword"})
     if r.status_code == 401:
         write_report("- ✅ Invalid password blocked")
     else:
@@ -126,7 +131,7 @@ def run_tests():
         
         # Send message
         start_time = time.time()
-        r_msg = requests.post(f"{BASE_URL}/chats/{chat_id}/messages", headers=headers_a, json={"role": "user", "content": "What is User A's secret code?"})
+        r_msg = requests.post(f"{BASE_URL}/messages/{chat_id}/generate", headers=headers_a, json={"role": "user", "content": "What is User A's secret code?"})
         # stream processing
         content = ""
         if r_msg.status_code == 200:
@@ -149,7 +154,7 @@ def run_tests():
     # ---------------------------------------------------------
     write_report("\n## Phase 5 & 11: Hallucination & Injection\n")
     
-    r_hallucinate = requests.post(f"{BASE_URL}/chats/{chat_id}/messages", headers=headers_a, json={"role": "user", "content": "What is the capital of Mars?"})
+    r_hallucinate = requests.post(f"{BASE_URL}/messages/{chat_id}/generate", headers=headers_a, json={"role": "user", "content": "What is the capital of Mars?"})
     hallucinate_text = ""
     for line in r_hallucinate.iter_lines():
         if line: hallucinate_text += line.decode()

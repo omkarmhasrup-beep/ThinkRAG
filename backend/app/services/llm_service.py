@@ -197,167 +197,124 @@ def generate_llm_response(
     # 2. GROQ
     # ============================================================
     elif settings.GROQ_API_KEY:
+        import time
+        max_retries = 4
+        base_delay = 1.0
 
-        try:
-            
-            user_content = question
-            model_to_use = model_id or settings.GROQ_MODEL
-            
-            if image:
-                user_content = [
-                    {"type": "text", "text": question},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image}"}}
-                ]
-                # Default to a vision model if the current one might not support vision
-                if "vision" not in model_to_use.lower() and "qwen" not in model_to_use.lower():
-                    model_to_use = "llama-3.2-11b-vision-preview" # Fallback vision model
+        user_content = question
+        model_to_use = model_id or settings.GROQ_MODEL
+        
+        if image:
+            user_content = [
+                {"type": "text", "text": question},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image}"}}
+            ]
+            if "vision" not in model_to_use.lower() and "qwen" not in model_to_use.lower():
+                model_to_use = "llama-3.2-11b-vision-preview"
 
-            with _http_client.stream(
-                "POST",
-                "https://api.groq.com/openai/v1/chat/completions",
-
-                headers={
-                    "Authorization": (
-                        f"Bearer {settings.GROQ_API_KEY}"
-                    ),
-                    "Content-Type": "application/json"
-                },
-
-                json={
-                    "model": model_to_use,
-
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": system_prompt
-                        },
-                        {
-                            "role": "user",
-                            "content": user_content
-                        }
-                    ],
-
-                    "stream": True,
-
-                    "max_tokens": 2048,
-
-                    "temperature": 0.7
-                },
-
-                timeout=600.0
-
-            ) as response:
-
-                response.raise_for_status()
-
-                # =================================================
-                # RAW GROQ STREAM
-                # =================================================
-
-                def _raw_groq():
-
-                    for line in response.iter_lines():
-
-                        if not line:
+        for attempt in range(max_retries):
+            try:
+                with _http_client.stream(
+                    "POST",
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": model_to_use,
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_content}
+                        ],
+                        "stream": True,
+                        "max_tokens": 2048,
+                        "temperature": 0.7
+                    },
+                    timeout=600.0
+                ) as response:
+                    
+                    if response.status_code in (429, 500, 502, 503, 504):
+                        retry_after = response.headers.get("Retry-After")
+                        if retry_after and retry_after.isdigit():
+                            delay = int(retry_after)
+                        else:
+                            delay = base_delay * (2 ** attempt)
+                            
+                        if attempt < max_retries - 1:
+                            print(f"[GROQ] HTTP {response.status_code}. Retrying in {delay}s (Attempt {attempt + 1}/{max_retries})...")
+                            time.sleep(delay)
                             continue
+                        else:
+                            if response.status_code == 429:
+                                yield "\n[System]: The AI provider is currently overwhelmed with requests (Rate Limit Exceeded). Please try again in a few minutes or switch to another model."
+                                return
+                            response.raise_for_status()
 
-                        if not line.startswith("data: "):
-                            continue
+                    response.raise_for_status()
 
-                        line = line[6:]
-
-                        # Stream finished
-                        if line == "[DONE]":
-                            break
-
-                        try:
-
-                            data = json.loads(line)
-
-                            # =====================================
-                            # GROQ ERROR
-                            # =====================================
-
-                            if "error" in data:
-
-                                msg = data["error"].get(
-                                    "message",
-                                    str(data["error"])
-                                )
-
-                                yield (
-                                    f"\n[Groq API Error]: {msg}"
-                                )
-
+                    # =================================================
+                    # RAW GROQ STREAM
+                    # =================================================
+                    def _raw_groq():
+                        for line in response.iter_lines():
+                            if not line:
+                                continue
+                            if not line.startswith("data: "):
+                                continue
+                            line = line[6:]
+                            if line == "[DONE]":
                                 break
-
-                            # =====================================
-                            # EXTRACT TOKEN
-                            # =====================================
-
-                            choices = data.get(
-                                "choices",
-                                []
-                            )
-
-                            if not choices:
+                            try:
+                                data = json.loads(line)
+                                if "error" in data:
+                                    msg = data["error"].get("message", str(data["error"]))
+                                    yield f"\n[Groq API Error]: {msg}"
+                                    break
+                                choices = data.get("choices", [])
+                                if not choices:
+                                    continue
+                                delta = choices[0].get("delta", {})
+                                content = delta.get("content")
+                                if content is not None:
+                                    yield content
+                            except json.JSONDecodeError:
+                                continue
+                            except Exception:
                                 continue
 
-                            delta = choices[0].get(
-                                "delta",
-                                {}
-                            )
+                    # =================================================
+                    # FILTER THINKING
+                    # =================================================
+                    for chunk in _filter_think_blocks(_raw_groq()):
+                        if chunk:
+                            yield chunk
+                            
+                # Break out of loop if successful
+                break
 
-                            content = delta.get(
-                                "content"
-                            )
-
-                            if content is not None:
-
-                                # Send each received chunk
-                                # immediately.
-                                yield content
-
-                        except json.JSONDecodeError:
-                            # Ignore malformed/non-JSON SSE lines.
-                            continue
-
-                        except Exception:
-                            # Ignore individual stream parsing errors.
-                            continue
-
-                # =================================================
-                # FILTER THINKING
-                # =================================================
-
-                for chunk in _filter_think_blocks(
-                    _raw_groq()
-                ):
-
-                    if chunk:
-                        yield chunk
-
-        except Exception as e:
-
-            error_details = str(e)
-
-            if (
-                hasattr(e, "response")
-                and e.response is not None
-            ):
-
+            except httpx.HTTPStatusError as e:
+                error_details = str(e)
                 try:
-                    error_details = str(
-                        e.response.content
-                    )
-
+                    error_details = e.response.text
                 except Exception:
                     pass
-
-            yield (
-                f"\nError connecting to Groq API: "
-                f"{error_details}"
-            )
+                yield f"\nError connecting to Groq API (HTTP {e.response.status_code}): {error_details}"
+                break
+                
+            except httpx.RequestError as e:
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2 ** attempt)
+                    print(f"[GROQ] Request Error: {e}. Retrying in {delay}s...")
+                    time.sleep(delay)
+                    continue
+                else:
+                    yield f"\nError connecting to Groq API: {e}"
+                    break
+                    
+            except Exception as e:
+                yield f"\nUnexpected error connecting to Groq API: {e}"
+                break
 
     # ============================================================
     # LOCAL OLLAMA
