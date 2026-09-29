@@ -52,8 +52,19 @@ const Chat = () => {
   const { chatId } = useParams();
   const navigate = useNavigate();
 
+  const draftKey = `draft_${chatId || 'new'}`;
   const [messages, setMessages] = useState<any[]>([]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(() => {
+    return localStorage.getItem(draftKey) || '';
+  });
+
+  useEffect(() => {
+    setInput(localStorage.getItem(`draft_${chatId || 'new'}`) || '');
+  }, [chatId]);
+
+  useEffect(() => {
+    localStorage.setItem(draftKey, input);
+  }, [input, draftKey]);
   const [loading, setLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [bookmarkSuccess, setBookmarkSuccess] = useState<number | null>(null);
@@ -97,11 +108,8 @@ const Chat = () => {
   useEffect(() => {
     if (messages.length > 0) {
       if (autoScrollToUserMsgRef.current) {
-        // Just sent a message, scroll the user message to the top
-        const latestUser = document.getElementById('latest-user-message');
-        if (latestUser) {
-          latestUser.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+        // Just sent a message, ensure the new AI message is fully visible
+        scrollToBottom(true);
         autoScrollToUserMsgRef.current = false;
       } else {
         // Stream update
@@ -545,7 +553,7 @@ const Chat = () => {
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shrink-0 shadow-md relative mt-1">
                       <Bot size={24} className="text-gray-900 dark:text-white" />
                       {msg.isStreaming && (
-                        <div className="absolute -bottom-1 right-0 bg-white dark:bg-black rounded-full px-1 shadow">
+                        <div className="absolute -bottom-1 -right-2 bg-white dark:bg-black rounded-full px-1.5 py-0.5 shadow border border-gray-100 dark:border-white/10">
                           <AiSpeakingIndicator />
                         </div>
                       )}

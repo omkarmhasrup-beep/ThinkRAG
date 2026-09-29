@@ -178,7 +178,7 @@ const VoiceChat: React.FC<VoiceChatProps> = ({ onTranscript }) => {
 };
 
 export const AiSpeakingIndicator = () => (
-  <div className="flex items-end gap-[3px] h-4 ml-3 opacity-80">
+  <div className="flex items-end gap-[3px] h-4 opacity-80">
     <div className="w-1 bg-primary rounded-full ai-speaking-bar" style={{ animationDelay: '0.0s' }} />
     <div className="w-1 bg-primary rounded-full ai-speaking-bar" style={{ animationDelay: '0.2s' }} />
     <div className="w-1 bg-primary rounded-full ai-speaking-bar" style={{ animationDelay: '0.4s' }} />
