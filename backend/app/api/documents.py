@@ -37,32 +37,27 @@ async def upload_document(
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
-        # Extract text immediately
-        extracted_text = extract_text_from_file(file_path, file_extension)
-            
-        # Upload the original file to S3 (if configured)
-        from ..services.storage_service import storage_service
-        object_key = f"user_{current_user.id}/{uuid.uuid4().hex}_{file.filename}"
-        s3_url = storage_service.upload_file(file_path, object_key)
-            
         # Create DB record first to get a valid auto-incremented file ID
         new_file = models.File(
             user_id=current_user.id,
             filename=file.filename,
-            filepath=s3_url,
+            filepath="pending",  # Will be updated by background task
             filetype=file_extension,
-            content=extracted_text
+            content=""  # Will be updated by background task
         )
         db.add(new_file)
         db.commit()
         db.refresh(new_file)
         
-        # Immediately delete the physical file as it's no longer needed
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        
-        # Offload processing and embedding to background task
-        background_tasks.add_task(process_file_and_embed, extracted_text, file.filename, current_user.id, file_id=new_file.id)
+        # Offload text extraction, S3 upload, processing and embedding to background task
+        background_tasks.add_task(
+            process_file_and_embed, 
+            file_path=file_path, 
+            file_extension=file_extension, 
+            filename=file.filename, 
+            user_id=current_user.id, 
+            file_id=new_file.id
+        )
             
         uploaded.append({"file_id": new_file.id, "filename": file.filename})
     
